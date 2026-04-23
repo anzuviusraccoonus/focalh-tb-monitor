@@ -33,7 +33,6 @@ void TSPage1::Initialize() {
                                g_NUM_MACHINE_GUN_TRIGGERS, 0.5, g_NUM_MACHINE_GUN_TRIGGERS + 0.5);
     p_graph_mg_triggers->SetXTitle("# of machine gun triggers in event");
     p_graph_mg_triggers->SetTitle("# of Machine Gun Triggers per Event");
-    p_graph_mg_triggers->SetStats(0);
     p_graph_mg_triggers->Draw();
     m_objects.push_back(p_graph_mg_triggers);
 

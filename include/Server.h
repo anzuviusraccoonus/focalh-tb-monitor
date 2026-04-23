@@ -23,6 +23,7 @@ class Server : public THttpServer {
         void ToggleDebugMode();
         void SetTimegraphsWindow(double seconds);
         void LoadMapping(std::string path);
+        void SaveGraphs(std::string path, std::string filetype);
 
 		ClassDefOverride(Server, 1)	
 

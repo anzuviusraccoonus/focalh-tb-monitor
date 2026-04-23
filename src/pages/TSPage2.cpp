@@ -30,15 +30,6 @@ void TSPage2::Initialize() {
     m_objects.push_back(p_graph_data_read);
 
     mp_canvas->cd(2);
-    //for (unsigned int i = 0; i < g_timegraphs_num_points; ++i) {
-    //    ypts[i] = 1;
-    //}
-    //TGraph* p_graph_bx_diff = new TGraph(g_timegraphs_num_points, xpts, ypts);
-    //gPad->SetName("p_graph_bx_diff");
-    //p_graph_bx_diff->SetTitle("Average difference between sequential lines' BxCnts in time window");
-    //p_graph_bx_diff->GetXaxis()->SetTitle("Time [sec.]");
-    //p_graph_bx_diff->GetYaxis()->SetTitle("BxCnt(n) - BxCnt(n-1)");
-    //p_graph_bx_diff->Draw();
     TH1I* p_graph_bx_diff = new TH1I("BxDiff", "BxDiff", 100, -49, 49);
     p_graph_bx_diff->SetTitle("Difference between sequential lines' Bx counters");
     p_graph_bx_diff->GetXaxis()->SetTitle("Difference");

@@ -14,14 +14,22 @@ Server::Server() : THttpServer(Form("http:%d;rw;noglobal", g_server_port)) {
     m_debug = false;
 	this->SetName("Server");
 	Register("/", this);
-	RegisterCommand("/Control/Set_Target",              "/Server/->SetTargetFile(\"%arg1%\")");
-	RegisterCommand("/Control/Start_Reader",            "/Server/->StartTailing()");
-	RegisterCommand("/Control/Stop_Reader",             "/Server/->StopTailing()");
-	RegisterCommand("/Control/Clear_Pages",             "/Server/->ClearPages()");
-    RegisterCommand("/Control/Load_Mapping",            "/Server/->LoadMapping(%arg1%)");
-	RegisterCommand("/Control/Print_Mapping",           "/Server/->PrintMapping()");
-    RegisterCommand("/Control/Set_Graph_Time_Window",   "/Server/->SetTimegraphsWindow(%arg1%)");
-    RegisterCommand("/Control/Toggle_Debug_Output",     "/Server/->ToggleDebugMode()");
+
+
+    // Don't be fooled! The space used in the command names aren't regular spaces;
+    // these will cause the command to fail for some reason.
+    // Instead, use this character that is enclosed in quotes --> " "
+
+	RegisterCommand("/Control/Set Target",              "/Server/->SetTargetFile(\"%arg1%\")");
+	RegisterCommand("/Control/Start Reader",            "/Server/->StartTailing()");
+	RegisterCommand("/Control/Stop Reader",             "/Server/->StopTailing()");
+	RegisterCommand("/Control/Clear Pages",             "/Server/->ClearPages()");
+    RegisterCommand("/Control/Load Mapping",            "/Server/->LoadMapping(%arg1%)");
+	RegisterCommand("/Control/Print Mapping",           "/Server/->PrintMapping()");
+    RegisterCommand("/Control/Set Graph Time Window",   "/Server/->SetTimegraphsWindow(%arg1%)");
+    RegisterCommand("/Control/Export Graphs to PNG",    "/Server/->SaveGraphs(\"%arg1%\", \".png\")");
+    RegisterCommand("/Control/Export Graphs to ROOT",   "/Server/->SaveGraphs(\"%arg1%\", \".root\")");
+    RegisterCommand("/Control/Toggle Debug Output",     "/Server/->ToggleDebugMode()");
 }
 
 void Server::RegisterPage(Page* p_page) {
@@ -79,4 +87,8 @@ void Server::SetTimegraphsWindow(double seconds) {
 
 void Server::LoadMapping(std::string path) {
     ChannelMapping::GetInstance()->LoadMapping(path);
+}
+
+void Server::SaveGraphs(std::string path, std::string filetype) {
+    PageManager::GetInstance()->SaveGraphs(path, filetype);
 }

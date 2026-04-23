@@ -1,4 +1,5 @@
 #include <chrono>
+#include <filesystem>
 #include "spdlog/spdlog.h"
 #include "PageManager.h"
 #include "Server.h"
@@ -56,6 +57,26 @@ void PageManager::ResetPages() {
 		p->Reset();
 	}
 }
+
+void PageManager::SaveGraphs(std::string path, std::string filetype) {
+    spdlog::info("Exporting graphs to {}", path);
+    if (not std::filesystem::exists(path)) {
+        spdlog::warn("Path {} does not exist; creating it instead", path);
+        std::filesystem::create_directories(path);
+    }
+
+    for (Page* p : m_pages) {
+        std::scoped_lock lock(g_mutex);
+        if (p->GetName() == "Overview Page") { continue; }
+        spdlog::debug("Saving {}", p->GetName());
+        TCanvas* p_canvas = p->GetCanvasPtr();
+        std::string filepath = path + "/" + p->GetName() + filetype;
+        p_canvas->SaveAs(filepath.c_str());
+    }
+
+    spdlog::info("Finished exporting graphs");
+}
+
 
 void PageManager::SetUpdateInterval(unsigned int milliseconds) {
 	m_update_interval = milliseconds;

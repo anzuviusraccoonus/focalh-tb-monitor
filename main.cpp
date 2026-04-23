@@ -44,6 +44,7 @@ int main(int argc, char **argv) {
     BuildPages(); // Page setup, layout, etc. happens in this function
 
 	// Load default channel mapping
+    spdlog::info("Loading default channel mapping...");
     p_mapping->LoadMapping("./channelmapping");
 
 	p_server->SetItemField("/", "_monitoring", "1000");

@@ -35,76 +35,79 @@ DataReader::DataReader() {
         // Function to run when we get an RDH L0 packet
         [&](const bp::RDH_L0& rdh, std::span<const std::byte> raw) {
             std::scoped_lock lock(g_mutex);
-            spdlog::debug("[RDH0] {:02X} {:02X} {:04X} {:02X} {:02X} {:04X} {:04X} {:04X} {:02X} {:02X} {:04X} {:02X} {:04X} {:08X} {:08X} {:02X} {:08X} {:08X}",
-                          rdh.header_version,
-                          rdh.header_size,
-                          rdh.fee_id,
-                          rdh.priority_bit,
-                          rdh.system_id,
-                          rdh.reserved0,
-                          rdh.offset_new_packet,
-                          rdh.memory_size,
-                          rdh.link_id,
-                          rdh.packet_counter,
-                          rdh.cru_id,
-                          rdh.dw,
-                          rdh.bc,
-                          rdh.reserved1,
-                          rdh.orbit,
-                          rdh.data_format,
-                          rdh.reserved2,
-                          rdh.reserved3 );
+            //spdlog::debug("[RDH0] {:02X} {:02X} {:04X} {:02X} {:02X} {:04X} {:04X} {:04X} {:02X} {:02X} {:04X} {:02X} {:04X} {:08X} {:08X} {:02X} {:08X} {:08X}",
+            //              rdh.header_version,
+            //              rdh.header_size,
+            //              rdh.fee_id,
+            //              rdh.priority_bit,
+            //              rdh.system_id,
+            //              rdh.reserved0,
+            //              rdh.offset_new_packet,
+            //              rdh.memory_size,
+            //              rdh.link_id,
+            //              rdh.packet_counter,
+            //              rdh.cru_id,
+            //              rdh.dw,
+            //              rdh.bc,
+            //              rdh.reserved1,
+            //              rdh.orbit,
+            //              rdh.data_format,
+            //              rdh.reserved2,
+            //              rdh.reserved3 );
 			++l0_lines_read;
         },
         
         // Function to run when we get an RDH L1 packet
         [&](const bp::RDH_L1& rdh, std::span<const std::byte> raw) {
             std::scoped_lock lock(g_mutex);
-            spdlog::debug("[RDH1] {:08X} {:04X} {:02X} {:02X} {:08X} {:08X} {:08X} {:04X} {:04X} {:08X} {:08X}",
-                          rdh.trg_type, 
-                          rdh.hb_packet_counter,
-                          rdh.stop_bit,
-                          rdh.reserved0,
-                          rdh.reserved1,
-                          rdh.reserved2,
-                          rdh.detector_field,
-                          rdh.par_bit,
-                          rdh.reserved3,
-                          rdh.reserved4,
-                          rdh.reserved5 );
+            //spdlog::debug("[RDH1] {:08X} {:04X} {:02X} {:02X} {:08X} {:08X} {:08X} {:04X} {:04X} {:08X} {:08X}",
+            //              rdh.trg_type, 
+            //              rdh.hb_packet_counter,
+            //              rdh.stop_bit,
+            //              rdh.reserved0,
+            //              rdh.reserved1,
+            //              rdh.reserved2,
+            //              rdh.detector_field,
+            //              rdh.par_bit,
+            //              rdh.reserved3,
+            //              rdh.reserved4,
+            //              rdh.reserved5 );
 			++l1_lines_read;
         },
         
-        // Function to run when we get a data packet
+        // Function to run when we get a data line
         [&](const bp::DataLine& line, std::span<const std::byte> raw) {
             std::scoped_lock lock(g_mutex);
+	    	spdlog::debug("[DATA] {:08X} {:08X} {:08X} {:08X} {:08X} {:08X} {:08X} {:08X} {:08X} {:08X}",
+                          line.header_type,
+                          line.header_vldb_id,
+                          line.bx_cnt,
+                          line.ob_cnt,
+                          line.data_word0,
+                          line.data_word1,
+                          line.data_word2,
+                          line.data_word3,
+                          line.data_word4,
+                          line.data_word5);
+
 			++data_lines_read;
 
-            // Don't read any data lines unless we got a trigger line first
+            // Don't process any data lines unless we got a trigger line first
             if (not m_has_active_trigger) { return; }
 
-            // This block determines when we've found the start of an event frame,
-            // following a valid trigger line
+            // This block determines when we've found the start of a DAQ frame
 	    	if (not m_is_reading_event_frame) {
                 auto magic = line.data_word0 & 0xF000000F;
                 if (magic == 0xF0000005 || magic == 0xF0000002) {
-	    			m_current_machinegun += 1;
-	    			spdlog::debug("╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤ START OF EVENT FRAME ╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤");
-	    			spdlog::debug("╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽ MACHINE GUN TRG. #{:02d} ╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽", m_current_machinegun);
-
-	    		    frame_start_time = line.bx_cnt + (line.ob_cnt << 12);	
-                    m_is_reading_event_frame = true;
-	    			for (int i = 0; i < g_NUM_VLDB; ++i) {
-	    				m_vldb_line_counter[i] = 0;
-                        m_vldb_line_counter_to_channel_index[i] = 0;
-                        m_vldb_bx_counter[i] = line.bx_cnt - 1;
-	    			}
+                    OnDAQFrameStart(line);
 	    		}
 	    	}
 
-            // If not currently reading event frame, i.e. the above block
-            // didn't find the start of the event frame, we skip this
+            // If we have an active trigger, and found the start of a DAQ frame,
+            // we process the line for information and other statistics
             if (m_is_reading_event_frame) {
+
+                // Keeping track of bunch crossing counters and accounting for rollover
                 if (not (line.bx_cnt == (m_vldb_bx_counter[line.header_vldb_id] + 1))) {
                     if ((line.bx_cnt == 0) & (m_vldb_bx_counter[line.header_vldb_id] == 3563)) {
                         m_vldb_bx_counter[line.header_vldb_id] = -1;
@@ -114,6 +117,7 @@ DataReader::DataReader() {
                 buffer_bx_counters.push_back(line.bx_cnt - m_vldb_bx_counter[line.header_vldb_id]);
                 m_vldb_bx_counter[line.header_vldb_id] += 1;
 
+                // Skip four specific channels: DAQ header, common mode, calib. and CRC
 	    	    if (not (m_vldb_line_counter[line.header_vldb_id] == 0 ||
 	    	    		 m_vldb_line_counter[line.header_vldb_id] == 1 ||
 	    	    		 m_vldb_line_counter[line.header_vldb_id] == 20 ||
@@ -122,31 +126,37 @@ DataReader::DataReader() {
 	    	    	m_current_channel = m_vldb_line_counter_to_channel_index[line.header_vldb_id];
 	    	    	m_vldb_line_counter_to_channel_index[line.header_vldb_id] += 1;
 	    	    	m_words = {	{ line.data_word0, line.data_word1 },
-	    	    				{ line.data_word2, line.data_word3 } 	};
+	    	    				{ line.data_word2, line.data_word3 } };
+                            
+                    // Added a check for VLDB link # just in case
+                    if (line.header_vldb_id > g_NUM_VLDB - 1) {
+                        spdlog::critical("Got data line for VLDB link {}, but we only have {} links!", 
+                                         line.header_vldb_id, g_NUM_VLDB);
+                    }
 
 	    	    	bool tc, tp;
 	    	    	unsigned long int adc, tot, toa;
 	    	    	for (unsigned int asic = 0; asic < g_NUM_ASIC_PER_VLDB; ++asic) {
 	    	    		for (unsigned int half = 0; half < g_NUM_HALVES_PER_ASIC; ++half) {
 	    	    			ParseWord(m_words[asic][half], tc, tp, adc, tot, toa);
-                            if (line.header_vldb_id > g_NUM_VLDB-1) {
-                                spdlog::critical("Got data line for VLDB link {}, but we only have {} links!", line.header_vldb_id, g_NUM_VLDB);
-                            }
 
 	    	    			ChannelData tmp_adc(line.header_vldb_id, 
                                                 asic, half, m_current_channel, 
                                                 m_current_machinegun, adc);
-	    	    			buffer_adc.push_back(tmp_adc);
 
 	    	    			ChannelData tmp_tot(line.header_vldb_id, 
                                                 asic, half, m_current_channel, 
                                                 m_current_machinegun, tot);
-	    	    			buffer_tot.push_back(tmp_tot);
 
 	    	    			ChannelData tmp_toa(line.header_vldb_id, 
                                                 asic, half, m_current_channel, 
                                                 m_current_machinegun, toa);
+
+	    	    			buffer_adc.push_back(tmp_adc);
+	    	    			buffer_tot.push_back(tmp_tot);
 	    	    			buffer_toa.push_back(tmp_toa);
+                            
+                            m_running_event_adc += adc;
 	    	    		}
 	    	    	}
 	    	    }
@@ -154,34 +164,16 @@ DataReader::DataReader() {
 	    	    m_vldb_line_counter[line.header_vldb_id] += 1;
             }
 	    	
-	    	// For the sake of log formatting, debug output goes here
-	    	spdlog::debug(	"[DATA] {:08X} {:08X} {:08X} {:08X} {:08X} {:08X} {:08X} {:08X} {:08X} {:08X}",
-	    					line.header_type,
-	    					line.header_vldb_id,
-	    					line.bx_cnt,
-	    					line.ob_cnt,
-	    					line.data_word0,
-	    					line.data_word1,
-	    					line.data_word2,
-	    					line.data_word3,
-	    					line.data_word4,
-	    					line.data_word5	);
 
             // This block determines whether we've gotten to the end of an event frame
 	    	if (m_vldb_line_counter[g_NUM_VLDB-1] == g_VLDB_LINES_PER_EVENT) {
-	    		spdlog::debug("╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿ MACHINE GUN TRG. #{:02d} ╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿", m_current_machinegun);
-	    		spdlog::debug("╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧  END OF EVENT FRAME  ╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧");
-	    		m_is_reading_event_frame = false;
-                if (m_current_machinegun == g_NUM_MACHINE_GUN_TRIGGERS-1) {
-                    ++num_complete_events;
-                    m_has_active_trigger = false;
-                    buffer_machineguns.push_back(m_current_machinegun+1);
-                }
+                OnDAQFrameEnd(line);
 
-	    		for (int i = 0; i < g_NUM_VLDB; ++i) {
-	    			m_vldb_line_counter[i] = 0;
-	    			m_vldb_line_counter_to_channel_index[i] = 0;
-	    		}
+                // If current machinegun equals the number we have, 
+                // we're at the end of a complete event
+                if (m_current_machinegun == g_NUM_MACHINE_GUN_TRIGGERS) {
+                    OnEventEnd();
+                }
 	    	}
 
         },
@@ -201,25 +193,25 @@ DataReader::DataReader() {
             // New trigger arrived while previous one was still active - this is an exception
             if (m_has_active_trigger) {
 
-                // The trigger arrived *during* an event frame
-                // Ignore it and log a warning for a lost trigger
+                // The trigger arrived *during* an event frame; ignore it and log a warning
                 if (m_is_reading_event_frame) {
                     spdlog::warn("Got a trigger line during an active event frame");
+
                     ++num_bad_triggers;
                 }
 
                 // The trigger arrived *between* event frames, i.e. before all machine guns were read
-                // This counts as a partial / incomplete event
+                // This counts as a partial / incomplete event: end current event & start a new one
                 else {
-                    spdlog::warn("Event had fewer than expected machine gun triggers");
-                    buffer_machineguns.push_back(m_current_machinegun+1);
-                    m_current_machinegun = -1;
+                    spdlog::warn("Event {} had fewer ({}) than expected ({}) machine gun triggers",
+                                 num_complete_events + num_incomplete_events,
+                                 m_current_machinegun,
+                                 g_NUM_MACHINE_GUN_TRIGGERS);
+
+                    OnEventEnd(); 
+                    OnEventStart();
+
                     ++num_good_triggers;
-                    m_is_reading_event_frame = false;
-                    for (int i = 0; i < g_NUM_VLDB; ++i) {
-                        m_vldb_line_counter[i] = 0;
-                        m_vldb_line_counter_to_channel_index[i] = 0;
-                    }
                 }
             }
 
@@ -227,18 +219,21 @@ DataReader::DataReader() {
             // This is normal behaviour and lets us know that an event is incoming
             else {
 
-                // The trigger arrived at the appropriate time
+                // The trigger arrived at the appropriate time - this is the standard \"new event\" case
                 if (not m_is_reading_event_frame) {
                     spdlog::debug("     ↳ Got a new trigger and everything seems good");
-                    m_current_machinegun = -1;
+
+                    OnEventStart();
+
                     ++num_good_triggers;
-                    m_has_active_trigger = true;
                 }
 
                 // The trigger arrived while we were still reading an event frame,
                 // but with no active trigger - this should never happen
                 else {
                     spdlog::critical("Got new trigger while an event frame was active but no trigger was active! This should not be possible!!");
+
+                    ++num_bad_triggers;
                 }
             }
         }
@@ -246,10 +241,58 @@ DataReader::DataReader() {
 
 }
 
-DataReader::~DataReader() {
+void DataReader::OnEventStart() {
+    spdlog::debug("OnEventStart() called");
+    
+    m_running_event_adc = 0;
+    m_current_machinegun = 0;
+
+    m_has_active_trigger = true;
 }
 
+void DataReader::OnEventEnd() {
+    spdlog::debug("OnEventEnd() called");
+    
+    buffer_machineguns.push_back(m_current_machinegun);
+    event_buffer.push_back(EventData(m_running_event_adc, m_current_machinegun));
+
+    if (m_current_machinegun == g_NUM_MACHINE_GUN_TRIGGERS) { 
+        ++num_complete_events; 
+    } else {
+        ++num_incomplete_events;
+    }
+                    
+    m_has_active_trigger = false;
+}
+
+void DataReader::OnDAQFrameStart(const bp::DataLine& line) {
+    spdlog::debug("╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤  START OF DAQ FRAME  ╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤");
+    spdlog::debug("╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽ MACHINE GUN TRG. #{:02d} ╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽", m_current_machinegun);
+
+    frame_start_time = line.bx_cnt + (line.ob_cnt << 12);
+    m_current_machinegun += 1;
+    m_is_reading_event_frame = true;
+}
+
+void DataReader::OnDAQFrameEnd(const bp::DataLine& line) {
+    spdlog::debug("╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿ MACHINE GUN TRG. #{:02d} ╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿", m_current_machinegun);
+    spdlog::debug("╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧   END OF DAQ FRAME   ╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧");
+
+    // Line counters are reset here, rather than on DAQ frame start,
+    // since we rely on these counters to determine the frame end
+    for (int i = 0; i < g_NUM_VLDB; ++i) {
+        m_vldb_line_counter[i] = 0;
+        m_vldb_line_counter_to_channel_index[i] = 0;
+        m_vldb_bx_counter[i] = line.bx_cnt - 1;
+    }
+
+    m_current_channel = -1;
+    m_is_reading_event_frame = false;
+}
+
+
 void DataReader::DoTailing() {
+    spdlog::debug("Tailing started");
     bp::TailOptions opts;
     opts.poll_ms = 1000;
     opts.read_chunk = 1u << 20;
@@ -288,17 +331,23 @@ void DataReader::Start() {
 	if (not std::filesystem::exists(m_target)) {
 		spdlog::error("Target file {} does not exist or can't be opened", m_target);
 	} else {
-		spdlog::info("DataReader started");
-		m_interrupt_tailing = false;
-		std::thread tail_thread(&DataReader::DoTailing, this);
-		tail_thread.detach();
+		spdlog::info("Starting DataReader");
+        if (not m_interrupt_tailing) {
+            spdlog::warn("DataReader appears to already be running "
+                         "- if this is not the case, restart the monitor. "
+                         "Ignoring request.");
+        } else {
+            m_interrupt_tailing = false;
+            std::thread tail_thread(&DataReader::DoTailing, this);
+            tail_thread.detach();
+        }
 	}
 }
 							
 
 void DataReader::Stop() {
 	m_interrupt_tailing = true;
-	spdlog::info("DataReader stopped");
+	spdlog::info("Stopping DataReader");
 }
 
 void DataReader::ParseWord(	unsigned long int& word, bool& tc, bool& tp, 
@@ -327,6 +376,8 @@ bool DataReader::IsRunning() {
 }
 
 void DataReader::Reset() {
+    spdlog::debug("Resetting DataReader");
+
     num_packets             = 0;
     num_heartbeat_packets   = 0;
     num_sync_packets        = 0;
@@ -348,9 +399,11 @@ void DataReader::Reset() {
     buffer_adc        .clear();
     buffer_tot        .clear();
     buffer_toa        .clear();
+    event_buffer      .clear();
 
     m_current_channel           = 0;
     m_current_machinegun        = 0;
+    m_running_event_adc         = 0;
     m_is_reading_event_frame    = false;
     m_has_active_trigger        = false;
     m_interrupt_tailing         = true;

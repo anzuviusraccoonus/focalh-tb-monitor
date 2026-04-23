@@ -30,6 +30,10 @@ class DataReader {
 
 
         // Public data members, to be accessed by graphs / pages
+        //
+        // Pages access is only when PageManager::UpdatePages() is called,
+        // which uses the global mutex lock, which the data reader also does
+        // whenever it processes a line, so these should be safe from race conditions
 
         unsigned int num_packets;
         unsigned int num_heartbeat_packets;
@@ -52,16 +56,22 @@ class DataReader {
         std::vector<ChannelData> buffer_adc = {};
         std::vector<ChannelData> buffer_tot = {};
         std::vector<ChannelData> buffer_toa = {};
+        std::vector<EventData> event_buffer = {};
 
     private:
         DataReader();
-        ~DataReader();
+
+        void OnEventStart();
+        void OnEventEnd();
+        void OnDAQFrameStart(const bp::DataLine& line);
+        void OnDAQFrameEnd(const bp::DataLine& line);
 
         static DataReader* mp_instance;
         bp::StreamParser* mp_parser;
 
 		int m_current_channel;
         int m_current_machinegun;
+        int m_running_event_adc;
         int m_vldb_bx_counter[g_NUM_VLDB];
         int m_vldb_line_counter[g_NUM_VLDB];
         int m_vldb_line_counter_to_channel_index[g_NUM_VLDB];

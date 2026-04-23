@@ -10,4 +10,9 @@ struct ChannelData {
 	unsigned int value = 0;
 };
 
+struct EventData {
+    int adc = 0;
+    int num_machineguns = 0;
+};
+
 #endif

@@ -19,6 +19,7 @@ class PageManager {
 		void UpdatePages();
 		void ClearPages();
         void ResetPages();
+        void SaveGraphs(std::string path, std::string filetype);
 		void SetUpdateInterval(unsigned int milliseconds);
 		unsigned int GetUpdateInterval();
 

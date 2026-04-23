@@ -8,6 +8,7 @@
 #include "pages/SpectralPage.h"
 #include "pages/HeatmapPage.h"
 #include "pages/StatusPage.h"
+#include "pages/SummaryPage.h"
 
 void BuildPages() {
     spdlog::info("Building pages...");
@@ -32,14 +33,14 @@ void BuildPages() {
             }
         }
 
-        HeatmapPage* p_heatmappage = new HeatmapPage(Form("%s_heatmap", m[v].c_str()),
+        HeatmapPage* p_heatmappage = new HeatmapPage(Form("%s Heatmap", m[v].c_str()),
                                                      Form("%s_heatmap", m[v].c_str()),
                                                      t[v],
                                                      "/Heatmaps");
         p_pagemanager->AddPage(p_heatmappage);
     }
 
-	StatusPage* p_statuspage = new StatusPage("Overview",
+	StatusPage* p_statuspage = new StatusPage("Overview Page",
 											  "Overview",
 											  nullptr, "/");
 	p_pagemanager->AddPage(p_statuspage);
@@ -58,6 +59,12 @@ void BuildPages() {
 												    "Spectral", 
 												    nullptr, "/");
     p_pagemanager->AddPage(p_spectralpage);
+
+    SummaryPage* p_summarypage = new SummaryPage("ADC Summary Page",
+                                                 "ADCSummary",
+                                                  nullptr, "/");
+
+    p_pagemanager->AddPage(p_summarypage);
 
     spdlog::info("Finished building pages");
 }
