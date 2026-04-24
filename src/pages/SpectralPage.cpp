@@ -9,12 +9,12 @@
 #include "pages/SpectralPage.h"
 
 void SpectralPage::Initialize() {
-	mp_canvas->Divide(2, 3, 0.01, 0.01);
+	mp_canvas->Divide(g_NUM_VLDB, 3, 0.01, 0.01);
 	
     std::map<int, std::string> m{{0, "ADC"}, {1, "ToT"}, {2, "ToA"}};
-    for (int vldb = 0; vldb < 2; ++vldb) {
+    for (int vldb = 0; vldb < g_NUM_VLDB; ++vldb) {
         for (int v = 0; v < 3; ++v) {
-            mp_canvas->cd((vldb + 2 * v) + 1);
+            mp_canvas->cd((vldb + g_NUM_VLDB * v) + 1);
             int num_channels = g_NUM_ASIC_PER_VLDB * g_NUM_HALVES_PER_ASIC * g_NUM_CHANNELS_PER_HALF;
             TH2D* p_graph = new TH2D(Form("VLDB %d %s", vldb, m[v].c_str()),
                                      Form("VLDB %d %s", vldb, m[v].c_str()),

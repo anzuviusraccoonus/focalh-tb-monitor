@@ -78,17 +78,6 @@ DataReader::DataReader() {
         // Function to run when we get a data line
         [&](const bp::DataLine& line, std::span<const std::byte> raw) {
             std::scoped_lock lock(g_mutex);
-	    	spdlog::debug("[DATA] {:08X} {:08X} {:08X} {:08X} {:08X} {:08X} {:08X} {:08X} {:08X} {:08X}",
-                          line.header_type,
-                          line.header_vldb_id,
-                          line.bx_cnt,
-                          line.ob_cnt,
-                          line.data_word0,
-                          line.data_word1,
-                          line.data_word2,
-                          line.data_word3,
-                          line.data_word4,
-                          line.data_word5);
 
 			++data_lines_read;
 
@@ -96,7 +85,7 @@ DataReader::DataReader() {
             if (not m_has_active_trigger) { return; }
 
             // This block determines when we've found the start of a DAQ frame
-	    	if (not m_is_reading_event_frame) {
+	    	if (not m_is_reading_daq_frame) {
                 auto magic = line.data_word0 & 0xF000000F;
                 if (magic == 0xF0000005 || magic == 0xF0000002) {
                     OnDAQFrameStart(line);
@@ -105,7 +94,7 @@ DataReader::DataReader() {
 
             // If we have an active trigger, and found the start of a DAQ frame,
             // we process the line for information and other statistics
-            if (m_is_reading_event_frame) {
+            if (m_is_reading_daq_frame) {
 
                 // Keeping track of bunch crossing counters and accounting for rollover
                 if (not (line.bx_cnt == (m_vldb_bx_counter[line.header_vldb_id] + 1))) {
@@ -128,10 +117,28 @@ DataReader::DataReader() {
 	    	    	m_words = {	{ line.data_word0, line.data_word1 },
 	    	    				{ line.data_word2, line.data_word3 } };
                             
-                    // Added a check for VLDB link # just in case
-                    if (line.header_vldb_id > g_NUM_VLDB - 1) {
+                    // Check if the found VLDB link ID is legal
+                    // VLDB link IDs are zero-indexed
+                    if (line.header_vldb_id >= g_NUM_VLDB) {
                         spdlog::critical("Got data line for VLDB link {}, but we only have {} links!", 
                                          line.header_vldb_id, g_NUM_VLDB);
+                    }
+
+                    // Check if the current channel we've counted to is legal
+                    // Channel indices are zero-indexed
+                    if (m_current_channel >= g_NUM_CHANNELS_PER_HALF) {
+                        spdlog::critical("Current channel in DAQ frame is {} (must be < {} !)",
+                                         m_current_channel,
+                                         g_NUM_CHANNELS_PER_HALF);
+
+                    }
+
+                    // Check if the current machine gun number is legal
+                    // Machine gun numbers are one-indexed
+                    if (m_current_machinegun > g_NUM_MACHINE_GUN_TRIGGERS) {
+                        spdlog::critical("Current machine gun in event is {} (must be < {} !)",
+                                         m_current_machinegun,
+                                         g_NUM_MACHINE_GUN_TRIGGERS+1);
                     }
 
 	    	    	bool tc, tp;
@@ -163,11 +170,23 @@ DataReader::DataReader() {
 
 	    	    m_vldb_line_counter[line.header_vldb_id] += 1;
             }
-	    	
+	    
+            // For the sake of log formatting, debug output goes here    
+	    	spdlog::debug("[DATA] {:08X} {:08X} {:08X} {:08X} {:08X} {:08X} {:08X} {:08X} {:08X} {:08X}",
+                          line.header_type,
+                          line.header_vldb_id,
+                          line.bx_cnt,
+                          line.ob_cnt,
+                          line.data_word0,
+                          line.data_word1,
+                          line.data_word2,
+                          line.data_word3,
+                          line.data_word4,
+                          line.data_word5);
 
             // This block determines whether we've gotten to the end of an event frame
 	    	if (m_vldb_line_counter[g_NUM_VLDB-1] == g_VLDB_LINES_PER_EVENT) {
-                OnDAQFrameEnd(line);
+                OnDAQFrameEnd();
 
                 // If current machinegun equals the number we have, 
                 // we're at the end of a complete event
@@ -193,14 +212,18 @@ DataReader::DataReader() {
             // New trigger arrived while previous one was still active - this is an exception
             if (m_has_active_trigger) {
 
-                // The trigger arrived *during* an event frame; ignore it and log a warning
-                if (m_is_reading_event_frame) {
-                    spdlog::warn("Got a trigger line during an active event frame");
+                // The trigger arrived *during* a DAQ frame; interrupt the current event and start a new one
+                if (m_is_reading_daq_frame) {
+                    spdlog::warn("Got a trigger line during an active DAQ frame");
+
+                    OnDAQFrameEnd();
+                    OnEventEnd();
+                    OnEventStart();
 
                     ++num_bad_triggers;
                 }
 
-                // The trigger arrived *between* event frames, i.e. before all machine guns were read
+                // The trigger arrived *between* DAQ frames, i.e. before all machine guns were read
                 // This counts as a partial / incomplete event: end current event & start a new one
                 else {
                     spdlog::warn("Event {} had fewer ({}) than expected ({}) machine gun triggers",
@@ -220,7 +243,7 @@ DataReader::DataReader() {
             else {
 
                 // The trigger arrived at the appropriate time - this is the standard \"new event\" case
-                if (not m_is_reading_event_frame) {
+                if (not m_is_reading_daq_frame) {
                     spdlog::debug("     ↳ Got a new trigger and everything seems good");
 
                     OnEventStart();
@@ -266,30 +289,30 @@ void DataReader::OnEventEnd() {
 }
 
 void DataReader::OnDAQFrameStart(const bp::DataLine& line) {
-    spdlog::debug("╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤  START OF DAQ FRAME  ╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤");
-    spdlog::debug("╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽ MACHINE GUN TRG. #{:02d} ╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽", m_current_machinegun);
-
     frame_start_time = line.bx_cnt + (line.ob_cnt << 12);
     m_current_machinegun += 1;
-    m_is_reading_event_frame = true;
+    m_is_reading_daq_frame = true;
+    
+    spdlog::debug("╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤  START OF DAQ FRAME  ╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤╤");
+    spdlog::debug("╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽ MACHINE GUN TRG. #{:02d} ╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽╽", m_current_machinegun);
 }
 
-void DataReader::OnDAQFrameEnd(const bp::DataLine& line) {
-    spdlog::debug("╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿ MACHINE GUN TRG. #{:02d} ╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿", m_current_machinegun);
-    spdlog::debug("╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧   END OF DAQ FRAME   ╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧");
+void DataReader::OnDAQFrameEnd() {
 
     // Line counters are reset here, rather than on DAQ frame start,
     // since we rely on these counters to determine the frame end
     for (int i = 0; i < g_NUM_VLDB; ++i) {
         m_vldb_line_counter[i] = 0;
         m_vldb_line_counter_to_channel_index[i] = 0;
-        m_vldb_bx_counter[i] = line.bx_cnt - 1;
+        //m_vldb_bx_counter[i] = line.bx_cnt - 1;
     }
 
     m_current_channel = -1;
-    m_is_reading_event_frame = false;
-}
+    m_is_reading_daq_frame = false;
 
+    spdlog::debug("╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿ MACHINE GUN TRG. #{:02d} ╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿╿", m_current_machinegun);
+    spdlog::debug("╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧   END OF DAQ FRAME   ╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧╧");
+}
 
 void DataReader::DoTailing() {
     spdlog::debug("Tailing started");
@@ -404,7 +427,7 @@ void DataReader::Reset() {
     m_current_channel           = 0;
     m_current_machinegun        = 0;
     m_running_event_adc         = 0;
-    m_is_reading_event_frame    = false;
+    m_is_reading_daq_frame      = false;
     m_has_active_trigger        = false;
     m_interrupt_tailing         = true;
 

@@ -29,7 +29,7 @@ void HeatmapPage::Update() {
     DataReader* p_reader = DataReader::GetInstance();
 	ChannelMapping* p_mapping = ChannelMapping::GetInstance();
 
-    std::vector<ChannelData> buffer_adc = *(static_cast<std::vector<ChannelData>*>(mp_data)); //p_reader->buffer_adc;
+    std::vector<ChannelData> buffer_adc = *(static_cast<std::vector<ChannelData>*>(mp_data));
 	int num_complete_events = p_reader->num_complete_events;
 	int num_incomplete_events = p_reader->num_incomplete_events;
 	std::pair<int, int> coords;

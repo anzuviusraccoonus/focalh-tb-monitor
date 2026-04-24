@@ -1,3 +1,4 @@
+#include <chrono>
 #include <TH2D.h>
 #include <TGraph.h>
 #include <TH1D.h>
@@ -69,19 +70,19 @@ void TSPage1::Initialize() {
     m_objects.push_back(p_graph_bad_triggers);
 }
 
-void TSPage1::Update() {
-	float update_interval = PageManager::GetInstance()->GetUpdateInterval() / 1000.;
-    
+void TSPage1::Update() { 
 	DataReader* p_reader = DataReader::GetInstance();
+    long int current_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    long int last_update_dt = current_time - PageManager::GetInstance()->GetLastUpdatedTime();
     long int start_time = p_reader->frame_start_time;
 
     double xmin, ymin, xmax, ymax;
 
     TGraph* p_graph_timestamps = static_cast<TGraph*>(m_objects[0]);
+    p_graph_timestamps->MovePoints(-(last_update_dt / 1000.), 0.);
 	while (p_graph_timestamps->GetPointX(0) < -g_timegraphs_window_seconds) {
 	    p_graph_timestamps->RemovePoint(0);
 	}
-    p_graph_timestamps->MovePoints(-(g_timegraphs_window_seconds / g_timegraphs_num_points) * update_interval, 0.);
     p_graph_timestamps->AddPoint(0, start_time);
     p_graph_timestamps->ComputeRange(xmin, ymin, xmax, ymax);
     p_graph_timestamps->SetMaximum(ymax * 1.02);
@@ -90,10 +91,10 @@ void TSPage1::Update() {
     int num_complete_events_dt = num_complete_events - m_num_complete_events;
     m_num_complete_events = num_complete_events;
     TGraph* p_graph_complete_events = static_cast<TGraph*>(m_objects[2]);
+    p_graph_complete_events->MovePoints(-(last_update_dt / 1000.), 0.);
 	while (p_graph_complete_events->GetPointX(0) < -g_timegraphs_window_seconds) {
     	p_graph_complete_events->RemovePoint(0);
 	}
-    p_graph_complete_events->MovePoints(-(g_timegraphs_window_seconds / g_timegraphs_num_points) * update_interval, 0.);
     p_graph_complete_events->AddPoint(0, num_complete_events_dt);
     p_graph_complete_events->ComputeRange(xmin, ymin, xmax, ymax);
     p_graph_complete_events->SetMaximum(ymax * 1.02);
@@ -102,10 +103,10 @@ void TSPage1::Update() {
     int num_incomplete_events_dt = num_incomplete_events - m_num_incomplete_events;
     m_num_incomplete_events = num_incomplete_events;
     TGraph* p_graph_incomplete_events = static_cast<TGraph*>(m_objects[3]);
+    p_graph_incomplete_events->MovePoints(-(last_update_dt / 1000.), 0.);
 	while (p_graph_incomplete_events->GetPointX(0) < -g_timegraphs_window_seconds) {
     	p_graph_incomplete_events->RemovePoint(0);
 	}
-    p_graph_incomplete_events->MovePoints(-(g_timegraphs_window_seconds / g_timegraphs_num_points) * update_interval, 0.);
     p_graph_incomplete_events->AddPoint(0, num_incomplete_events_dt);
     p_graph_incomplete_events->ComputeRange(xmin, ymin, xmax, ymax);
     p_graph_incomplete_events->SetMaximum(ymax * 1.02);
@@ -114,10 +115,10 @@ void TSPage1::Update() {
     int num_good_triggers_dt = num_good_triggers - m_num_good_triggers;
     m_num_good_triggers = num_good_triggers;
     TGraph* p_graph_good_triggers = static_cast<TGraph*>(m_objects[4]);
+    p_graph_good_triggers->MovePoints(-(last_update_dt / 1000.), 0.);
 	while (p_graph_good_triggers->GetPointX(0) < -g_timegraphs_window_seconds) {
     	p_graph_good_triggers->RemovePoint(0);
 	}
-    p_graph_good_triggers->MovePoints(-(g_timegraphs_window_seconds / g_timegraphs_num_points) * update_interval, 0.);
     p_graph_good_triggers->AddPoint(0, num_good_triggers_dt);
     p_graph_good_triggers->ComputeRange(xmin, ymin, xmax, ymax);
     p_graph_good_triggers->SetMaximum(ymax * 1.02);
@@ -126,10 +127,10 @@ void TSPage1::Update() {
     int num_bad_triggers_dt = num_bad_triggers - m_num_bad_triggers;
     m_num_bad_triggers = num_bad_triggers;
     TGraph* p_graph_bad_triggers = static_cast<TGraph*>(m_objects[5]);
+    p_graph_bad_triggers->MovePoints(-(last_update_dt / 1000.), 0.);
 	while (p_graph_bad_triggers->GetPointX(0) < -g_timegraphs_window_seconds) {
     	p_graph_bad_triggers->RemovePoint(0);
 	}
-    p_graph_bad_triggers->MovePoints(-(g_timegraphs_window_seconds / g_timegraphs_num_points) * update_interval, 0.);
     p_graph_bad_triggers->AddPoint(0, num_bad_triggers_dt);
     p_graph_bad_triggers->ComputeRange(xmin, ymin, xmax, ymax);
     p_graph_bad_triggers->SetMaximum(ymax * 1.02);

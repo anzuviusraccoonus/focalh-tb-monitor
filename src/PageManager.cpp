@@ -10,7 +10,8 @@ PageManager* PageManager::mp_instance = nullptr;
 PageManager::PageManager() {
     spdlog::info("Initializing PageManager");
     m_pages = {};
-	m_update_interval = 1000;	
+	m_update_interval = 1000;
+    m_last_updated_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 	std::thread update_thread(&PageManager::UpdatePages, this);
 	update_thread.detach();
 }
@@ -37,6 +38,9 @@ void PageManager::UpdatePages() {
             spdlog::debug("Updating {}", p->GetName());
 			p->Update();
 		}
+
+        m_last_updated_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+
 	}
 }
 
@@ -67,7 +71,10 @@ void PageManager::SaveGraphs(std::string path, std::string filetype) {
 
     for (Page* p : m_pages) {
         std::scoped_lock lock(g_mutex);
+
+        // Don't export the overview; it takes too much space for some reason
         if (p->GetName() == "Overview Page") { continue; }
+
         spdlog::debug("Saving {}", p->GetName());
         TCanvas* p_canvas = p->GetCanvasPtr();
         std::string filepath = path + "/" + p->GetName() + filetype;
@@ -84,4 +91,8 @@ void PageManager::SetUpdateInterval(unsigned int milliseconds) {
 
 unsigned int PageManager::GetUpdateInterval() {
 	return m_update_interval;
+}
+
+long int PageManager::GetLastUpdatedTime() {
+    return m_last_updated_time;
 }

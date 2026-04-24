@@ -64,7 +64,7 @@ class DataReader {
         void OnEventStart();
         void OnEventEnd();
         void OnDAQFrameStart(const bp::DataLine& line);
-        void OnDAQFrameEnd(const bp::DataLine& line);
+        void OnDAQFrameEnd();
 
         static DataReader* mp_instance;
         bp::StreamParser* mp_parser;
@@ -75,7 +75,7 @@ class DataReader {
         int m_vldb_bx_counter[g_NUM_VLDB];
         int m_vldb_line_counter[g_NUM_VLDB];
         int m_vldb_line_counter_to_channel_index[g_NUM_VLDB];
-		bool m_is_reading_event_frame;
+		bool m_is_reading_daq_frame;
 		bool m_has_active_trigger;
 		bool m_interrupt_tailing;
 		std::string m_target;

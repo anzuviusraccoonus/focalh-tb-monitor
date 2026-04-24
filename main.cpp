@@ -35,19 +35,17 @@ int main(int argc, char **argv) {
         spdlog::set_level(spdlog::level::debug);
 	}
 
-    // This should also be instantiation of the singletons
 	Server*         p_server        = Server::GetInstance();
+
     PageManager*    p_pagemanager   = PageManager::GetInstance();
+    BuildPages();
+                  
     DataReader*     p_reader        = DataReader::GetInstance();
+
     ChannelMapping* p_mapping       = ChannelMapping::GetInstance();
     
-    BuildPages(); // Page setup, layout, etc. happens in this function
 
-	// Load default channel mapping
-    spdlog::info("Loading default channel mapping...");
-    p_mapping->LoadMapping("./channelmapping");
-
-	p_server->SetItemField("/", "_monitoring", "1000");
+    p_server->SetItemField("/", "_monitoring", "100");
 	p_server->SetTimer(100, false); // false = run asynchronously
 
 	p_pagemanager->SetUpdateInterval(arg_update.Get());

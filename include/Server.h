@@ -22,6 +22,7 @@ class Server : public THttpServer {
 		void ClearPages();
         void ToggleDebugMode();
         void SetTimegraphsWindow(double seconds);
+        void SetPageUpdateInterval(double seconds);
         void LoadMapping(std::string path);
         void SaveGraphs(std::string path, std::string filetype);
 

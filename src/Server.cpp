@@ -24,9 +24,10 @@ Server::Server() : THttpServer(Form("http:%d;rw;noglobal", g_server_port)) {
 	RegisterCommand("/Control/Start Reader",            "/Server/->StartTailing()");
 	RegisterCommand("/Control/Stop Reader",             "/Server/->StopTailing()");
 	RegisterCommand("/Control/Clear Pages",             "/Server/->ClearPages()");
-    RegisterCommand("/Control/Load Mapping",            "/Server/->LoadMapping(%arg1%)");
+    RegisterCommand("/Control/Load Mapping",            "/Server/->LoadMapping(\"%arg1%\")");
 	RegisterCommand("/Control/Print Mapping",           "/Server/->PrintMapping()");
     RegisterCommand("/Control/Set Graph Time Window",   "/Server/->SetTimegraphsWindow(%arg1%)");
+    RegisterCommand("/Control/Set Page Update Interval","/Server/->SetPageUpdateInterval(%arg1%)");
     RegisterCommand("/Control/Export Graphs to PNG",    "/Server/->SaveGraphs(\"%arg1%\", \".png\")");
     RegisterCommand("/Control/Export Graphs to ROOT",   "/Server/->SaveGraphs(\"%arg1%\", \".root\")");
     RegisterCommand("/Control/Toggle Debug Output",     "/Server/->ToggleDebugMode()");
@@ -41,11 +42,6 @@ void Server::PrintMapping() {
 }
 
 void Server::StartTailing() {
-    if (DataReader::GetInstance()->IsRunning()) {
-        spdlog::error("Reader is already running - stop the reader first");
-        return;
-    }
-
     DataReader::GetInstance()->Start();
 }	
 
@@ -83,6 +79,12 @@ void Server::SetTimegraphsWindow(double seconds) {
     spdlog::info("Setting time window of graphs to {} seconds", seconds);
     g_timegraphs_window_seconds = seconds;
     g_timegraphs_num_points = (int)seconds;
+}
+
+void Server::SetPageUpdateInterval(double seconds) {
+    spdlog::info("Setting update interval of pages to {} seconds", seconds);
+    unsigned int milliseconds = seconds * 1000.;
+    PageManager::GetInstance()->SetUpdateInterval(milliseconds);
 }
 
 void Server::LoadMapping(std::string path) {

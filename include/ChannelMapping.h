@@ -17,10 +17,9 @@ class ChannelMapping : public TObject {
 			return mp_instance;
 		}
 
-        void LoadMapping(std::string path);
-
+        bool LoadMapping(std::string path);
         void PrintMapping();
-
+        bool IsMappingLoaded();
         std::pair<int, int> GetRowCol(int vldb, int asic, int half, int chn);
 
 	private:
@@ -28,6 +27,8 @@ class ChannelMapping : public TObject {
 
 		static ChannelMapping* mp_instance;
         std::pair<int, int> m_mapping[g_NUM_VLDB][g_NUM_ASIC_PER_VLDB][g_NUM_HALVES_PER_ASIC][g_NUM_CHANNELS_PER_HALF];
+
+        bool m_is_mapping_loaded;
 };
 
 #endif

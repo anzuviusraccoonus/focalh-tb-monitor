@@ -1,6 +1,7 @@
 #ifndef __MONITOR_PAGEMANAGER_H__
 #define __MONITOR_PAGEMANAGER_H__
 
+#include <chrono>
 #include <TPaveText.h>
 #include <TText.h>
 #include "Page.h"
@@ -22,6 +23,7 @@ class PageManager {
         void SaveGraphs(std::string path, std::string filetype);
 		void SetUpdateInterval(unsigned int milliseconds);
 		unsigned int GetUpdateInterval();
+        long int GetLastUpdatedTime();
 
 	private:
         PageManager();
@@ -30,6 +32,7 @@ class PageManager {
 
 		std::vector<Page*> m_pages;
 		unsigned int m_update_interval;
+        long int m_last_updated_time;
 };
 
 #endif

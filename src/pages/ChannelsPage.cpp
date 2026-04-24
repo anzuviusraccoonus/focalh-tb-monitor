@@ -45,6 +45,14 @@ void ChannelsPage::Update() {
 			unsigned int chn    = p_buffer->at(m_buffer_idx).chn;
 			unsigned int value  = p_buffer->at(m_buffer_idx).value;
 			unsigned int mg     = p_buffer->at(m_buffer_idx).mg;
+
+            // Prevent bad ChannelData objects (= with invalid values) from 
+            // crashing the monitor; these problems should be logged by the DataReader
+            if ((chn >= m_objects.size()) || (mg > g_NUM_MACHINE_GUN_TRIGGERS)) {
+                ++m_buffer_idx;
+                continue;
+            }
+
 			TH2D* p_graph = static_cast<TH2D*>(m_objects[chn]);
 			p_graph->Fill(mg, value);
 		}
