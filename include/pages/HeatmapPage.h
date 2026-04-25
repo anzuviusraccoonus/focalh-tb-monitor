@@ -14,6 +14,7 @@ class HeatmapPage : public Page {
 
 	private:
 		unsigned long int m_buffer_idx;
+        unsigned int m_num_events;
 };
 
 #endif

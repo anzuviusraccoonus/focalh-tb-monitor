@@ -7,6 +7,18 @@ ChannelMapping* ChannelMapping::mp_instance = nullptr;
 
 ChannelMapping::ChannelMapping() {
     spdlog::info("Initializing ChannelMapping");
+    InitMapping();
+
+    if (std::filesystem::exists("./channelmapping")) {
+        spdlog::info("Loading default channel mapping");
+        LoadMapping("./channelmapping");
+    } else {
+        spdlog::info("Default channel mapping not found; heatmaps will not be available until one is loaded");
+    }
+}
+
+void ChannelMapping::InitMapping() {
+    spdlog::debug("Init channel mapping");
     for (int i = 0; i < g_NUM_VLDB; ++i) {
         for (int j = 0; j < g_NUM_ASIC_PER_VLDB; ++j) {
             for (int k = 0; k < g_NUM_HALVES_PER_ASIC; ++k) {
@@ -17,22 +29,15 @@ ChannelMapping::ChannelMapping() {
             }
         }
     }
-
-    spdlog::info("Trying to load default channel mapping...");
-    if (not LoadMapping("./channelmapping")) {
-        spdlog::info("No default channel mapping file found; heatmaps will not be available");
-        m_is_mapping_loaded = false;
-    } else {
-        m_is_mapping_loaded = true;
-    }
 }
 
-bool ChannelMapping::LoadMapping(std::string path) {
+void ChannelMapping::LoadMapping(std::string path) {
 	if (not std::filesystem::exists(path)) {
         spdlog::error("Channel mapping file {} does not exist or can't be opened", path);
-        return false;
+        return;
     }
 
+    InitMapping();
     spdlog::info("Loading new channel mapping from {}", path);
     std::ifstream infile(path);
     std::string line;
@@ -59,7 +64,6 @@ bool ChannelMapping::LoadMapping(std::string path) {
     spdlog::info("Loaded new channel mapping; {} channels were initialized",
                  num_initialized_channels);
 
-    return true;
 }
 
 std::pair<int, int> ChannelMapping::GetRowCol(int vldb, int asic, int half, int chn) {
@@ -67,12 +71,7 @@ std::pair<int, int> ChannelMapping::GetRowCol(int vldb, int asic, int half, int 
 }
 
 void ChannelMapping::PrintMapping() {
-    if (not IsMappingLoaded()) {
-        spdlog::info("No channel mapping is currently loaded");
-        return;
-    }
-
-    spdlog::info("Printing current channel mapping..");
+    spdlog::info("Printing currently loaded channel mapping..");
     spdlog::info("╔ VLDB ASIC.Half #Chn        Row  Col ╗");
     spdlog::info("║                                     ║");
     for (int i = 0; i < g_NUM_VLDB; ++i) {
@@ -95,8 +94,4 @@ void ChannelMapping::PrintMapping() {
     }
 
     spdlog::info("╚═════════════════════════════════════╝");
-}
-
-bool ChannelMapping::IsMappingLoaded() {
-    return m_is_mapping_loaded;
 }

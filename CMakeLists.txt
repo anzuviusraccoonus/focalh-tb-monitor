@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(FocalHMonitor VERSION 1.1.1 LANGUAGES CXX)
+project(FocalHMonitor VERSION 1.2.0 LANGUAGES CXX)
 
 include(FetchContent)
 
