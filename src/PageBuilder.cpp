@@ -3,12 +3,13 @@
 #include "DataStructs.h"
 #include "globals.h"
 #include "pages/ChannelsPage.h"
-#include "pages/TSPage1.h"
-#include "pages/TSPage2.h"
 #include "pages/SpectralPage.h"
 #include "pages/HeatmapPage.h"
 #include "pages/StatusPage.h"
 #include "pages/SummaryPage.h"
+#include "pages/IntegrityPage.h"
+#include "pages/EventsPage.h"
+#include "pages/TriggersPage.h"
 
 void BuildPages() {
     spdlog::info("Building pages...");
@@ -45,26 +46,33 @@ void BuildPages() {
 											  nullptr, "/");
 	p_pagemanager->AddPage(p_statuspage);
 
-    TSPage1* p_tspage1 = new TSPage1("TS Page 1", 
-											  "TS1", 
-											  &(p_reader->frame_start_time), "/");
-    p_pagemanager->AddPage(p_tspage1);
-
-    TSPage2* p_tspage2 = new TSPage2("TS Page 2", 
-									 "TS2", 
-									 nullptr, "/");
-    p_pagemanager->AddPage(p_tspage2);
+    EventsPage* p_eventspage = new EventsPage("Event Statistics",
+                                              "EventsPage",
+                                              nullptr, "/");
+    p_pagemanager->AddPage(p_eventspage);
+    
+    TriggersPage* p_triggerspage = new TriggersPage("Trigger Statistics",
+                                                    "TriggerPage",
+                                                    nullptr, "/");
+    p_pagemanager->AddPage(p_triggerspage);
 
     SpectralPage* p_spectralpage = new SpectralPage("Spectral Graphs", 
-												    "Spectral", 
+												    "SpectralPage", 
 												    nullptr, "/");
     p_pagemanager->AddPage(p_spectralpage);
 
-    SummaryPage* p_summarypage = new SummaryPage("ADC Summary Page",
-                                                 "ADCSummary",
-                                                  nullptr, "/");
+    // Disabled until it's updated to handle separate ADC counts for VLDB links
+    //SummaryPage* p_summarypage = new SummaryPage("ADC Summary Page",
+    //                                             "ADCSummary",
+    //                                              nullptr, "/");
 
-    p_pagemanager->AddPage(p_summarypage);
+    //p_pagemanager->AddPage(p_summarypage);
+
+    IntegrityPage* p_integritypage = new IntegrityPage("Data Integrity Errors",
+                                                       "Integrity",
+                                                       nullptr, "/");
+
+    p_pagemanager->AddPage(p_integritypage);
 
     spdlog::info("Finished building pages");
 }

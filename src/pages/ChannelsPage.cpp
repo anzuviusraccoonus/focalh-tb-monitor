@@ -9,7 +9,6 @@
 #include "pages/ChannelsPage.h"
 
 void ChannelsPage::Initialize() {
-    m_buffer_idx = 0;
 	mp_canvas->DivideSquare(g_NUM_CHANNELS_PER_HALF, 0.001, 0.001);
 	for (int i = 0; i < g_NUM_CHANNELS_PER_HALF; ++i) {
 		TH2D* p_graph = new TH2D(Form("%s_%d", mp_canvas->GetName(), i),
@@ -34,30 +33,27 @@ void ChannelsPage::Initialize() {
 
 void ChannelsPage::Update() {
 	std::vector<ChannelData>* p_buffer = static_cast<std::vector<ChannelData>*>(mp_data);
-	while (m_buffer_idx < p_buffer->size()) {
-		unsigned int vldb_id = p_buffer->at(m_buffer_idx).vldb_id;
-		unsigned int asic_id = p_buffer->at(m_buffer_idx).asic_id;
-		unsigned int half    = p_buffer->at(m_buffer_idx).half;
+    for (const ChannelData& data : *p_buffer) {
+        unsigned int vldb_id = data.vldb_id;
+        unsigned int asic_id = data.asic_id;
+        unsigned int half = data.half;
 		if ( (vldb_id == m_vldb) &
 			 (asic_id == m_asic) &
 			 (half    == m_half)   ) {
 
-			unsigned int chn    = p_buffer->at(m_buffer_idx).chn;
-			unsigned int value  = p_buffer->at(m_buffer_idx).value;
-			unsigned int mg     = p_buffer->at(m_buffer_idx).mg;
-
+            unsigned int chn = data.chn;
+            unsigned int value = data.value;
+            unsigned int mg = data.mg;
+            
             // Prevent bad ChannelData objects (= with invalid values) from 
             // crashing the monitor; these problems should be logged by the DataReader
             if ((chn >= m_objects.size()) || (mg > g_NUM_MACHINE_GUN_TRIGGERS)) {
-                ++m_buffer_idx;
                 continue;
             }
 
 			TH2D* p_graph = static_cast<TH2D*>(m_objects[chn]);
 			p_graph->Fill(mg, value);
 		}
-
-		++m_buffer_idx;
 	}
 }
 
@@ -68,7 +64,6 @@ void ChannelsPage::Clear() {
 }
 
 void ChannelsPage::Reset() {
-    m_buffer_idx = 0;
 }
 
 void ChannelsPage::SetBoardIDs(unsigned int vldb_id, unsigned int asic_id, unsigned int half) {

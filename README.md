@@ -55,6 +55,12 @@ In the "VLDB #" folders and their subfolders, pages can be found that show ADC, 
 
 Currently, shows just one graph with the per-event ADC sums. Only complete events, i.e. events where all machine gun triggers were present, are included.
 
+### Data Integrity Errors Page
+
+Shows cumulative errors on each VLDB link (grouped by ASIC) that have been found in DAQ headers. The errors counted here are mismatches in header/tailer patterns as well as whether or not any of the three Hamming decode error bits are set in the header. Pattern mismatches are counted as one error, even if both patterns are wrong, and Hamming decode errors are also counted as a single error, regardless of how many bits are set.
+
+The total number of errors in the current file is also shown on the Overview Page; if this number at any time is greater than 0, the Overview Page will display this in red.
+
 ## Controls
 
 The following controls are available to any user with access to the server, whether locally or remotely.

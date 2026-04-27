@@ -3,6 +3,7 @@
 #include "ChannelMapping.h"
 #include "DataReader.h"
 #include "PageManager.h"
+#include "pages/SpectralPage.h"
 #include "globals.h"
 
 ClassImp(Server)
@@ -28,6 +29,7 @@ Server::Server() : THttpServer(Form("http:%d;rw;noglobal", g_server_port)) {
 	RegisterCommand("/Control/Print Mapping",           "/Server/->PrintMapping()");
     RegisterCommand("/Control/Set Graph Time Window",   "/Server/->SetTimegraphsWindow(%arg1%)");
     RegisterCommand("/Control/Set Page Update Interval","/Server/->SetPageUpdateInterval(%arg1%)");
+    RegisterCommand("/Control/Set Spectral Graph MG",   "/Server/->SetWhichMachinegun(%arg1%)");
     RegisterCommand("/Control/Export Graphs to PNG",    "/Server/->SaveGraphs(\"%arg1%\", \".png\")");
     RegisterCommand("/Control/Export Graphs to ROOT",   "/Server/->SaveGraphs(\"%arg1%\", \".root\")");
     RegisterCommand("/Control/Toggle Debug Output",     "/Server/->ToggleDebugMode()");
@@ -86,6 +88,12 @@ void Server::SetPageUpdateInterval(double seconds) {
     unsigned int milliseconds = seconds * 1000.;
     PageManager::GetInstance()->SetUpdateInterval(milliseconds);
 }
+
+void Server::SetWhichMachinegun(int mg) {
+    SpectralPage* p_page = static_cast<SpectralPage*>(PageManager::GetInstance()->GetPagePtr("Spectral Graphs"));
+    p_page->SetWhichMachinegun(mg);
+}
+
 
 void Server::LoadMapping(std::string path) {
     ChannelMapping::GetInstance()->LoadMapping(path);

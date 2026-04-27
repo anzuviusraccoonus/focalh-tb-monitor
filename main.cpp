@@ -23,6 +23,8 @@ int main(int argc, char **argv) {
                                          "Update interval of the pages, in milliseconds",
                                          {'t'}, 1000);
 
+    args::ValueFlag<std::string> arg_initfile (parser, "file", "", {'f'}, "");
+
     try {
         parser.ParseCLI(argc, argv);
     }
@@ -30,12 +32,11 @@ int main(int argc, char **argv) {
         std::cout << parser;
         return 0;
     }
-    
-    if (arg_verbose) {
-        spdlog::set_level(spdlog::level::debug);
-	}
 
 	Server*         p_server        = Server::GetInstance();
+    if (arg_verbose) {
+        p_server->ToggleDebugMode();
+    }
 
     PageManager*    p_pagemanager   = PageManager::GetInstance();
     BuildPages();

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(FocalHMonitor VERSION 1.2.0 LANGUAGES CXX)
+project(FocalHMonitor VERSION 2.0.0 LANGUAGES CXX)
 
 include(FetchContent)
 
@@ -49,10 +49,11 @@ target_sources(Monitor
 		src/pages/StatusPage.cpp
 		src/pages/ChannelsPage.cpp
         src/pages/SpectralPage.cpp
-		src/pages/HeatmapPage.cpp
-        src/pages/TSPage1.cpp
-        src/pages/TSPage2.cpp
+        src/pages/HeatmapPage.cpp
+        src/pages/EventsPage.cpp
+        src/pages/TriggersPage.cpp
         src/pages/SummaryPage.cpp
+        src/pages/IntegrityPage.cpp
 )
 
 target_link_libraries(Monitor

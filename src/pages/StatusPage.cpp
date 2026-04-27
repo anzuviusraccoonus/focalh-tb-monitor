@@ -115,6 +115,15 @@ void StatusPage::Initialize() {
 	mp_last_data_time->SetTextSize(FONTSIZE_SMALL);
 	
     
+    mp_num_errors_desc = status->AddText(0.44, 0.30, "Integrity check failures: ");
+	mp_num_errors_desc->SetTextAlign(13);
+	mp_num_errors_desc->SetTextSize(FONTSIZE_SMALL);
+	
+	mp_num_errors = status->AddText(0.75, 0.30, "0");
+	mp_num_errors->SetTextAlign(13);
+	mp_num_errors->SetTextSize(FONTSIZE_SMALL);
+	
+    
     line = status->AddText(0.25, 0.15, "Server last updated at ");
 	line->SetTextAlign(13);
 	line->SetTextSize(FONTSIZE_SMALL);
@@ -175,6 +184,14 @@ void StatusPage::Update() {
 	mp_num_sync_packets->SetText(mp_num_sync_packets->GetX(), mp_num_sync_packets->GetY(),
 						    	 std::to_string(p_reader->num_sync_packets).c_str());
 
+
+    if (not p_reader->integrity_check_fails == 0) {
+        mp_num_errors_desc->SetTextColor(kRed);
+        mp_num_errors->SetTextColor(kRed);
+        mp_num_errors->SetText(mp_num_errors->GetX(), mp_num_errors->GetY(),
+                               std::to_string(p_reader->integrity_check_fails).c_str());
+    }
+
 	static const char *SIZES[] = {"B", "kB", "MB", "GB"};
 	size_t div = 0;
 	size_t rem = 0;
@@ -204,4 +221,6 @@ void StatusPage::Reset() {
 	mp_last_trig_time->SetText(mp_last_trig_time->GetX(), mp_last_trig_time->GetY(), "never )");
     m_num_trig_lines_read = 0;
     m_num_data_lines_read = 0;
+    mp_num_errors->SetTextColor(kBlack);
+    mp_num_errors_desc->SetTextColor(kBlack);
 }

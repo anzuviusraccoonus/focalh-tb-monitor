@@ -15,7 +15,6 @@ class ChannelsPage : public Page {
 		void SetBoardIDs(unsigned int vldb_id, unsigned int asic_id, unsigned int half);
 
 	private:
-		unsigned long int m_buffer_idx;
 		unsigned int m_vldb;
 		unsigned int m_asic;
 		unsigned int m_half;

@@ -31,20 +31,27 @@ void HeatmapPage::Update() {
 	ChannelMapping* p_mapping = ChannelMapping::GetInstance();
 
 	std::pair<int, int> coords;
-    std::vector<ChannelData> buffer = *(static_cast<std::vector<ChannelData>*>(mp_data));
+    std::vector<ChannelData>* buffer = static_cast<std::vector<ChannelData>*>(mp_data);
     float temp[g_NUM_MACHINE_GUN_TRIGGERS][g_HEATMAP_NUM_ROWS][g_HEATMAP_NUM_COLS] = {};
- 
-    int delta_events = ((p_reader->num_complete_events + p_reader->num_incomplete_events) - m_num_events);
+    
+    int total_current_events = 0;
+    for (int vldb = 0; vldb < g_NUM_VLDB; ++vldb) {
+        int vldb_events = p_reader->num_complete_events[vldb] + p_reader->num_incomplete_events[vldb];
+        total_current_events = std::max(total_current_events, vldb_events);
+    }
+
+    int delta_events = total_current_events - m_num_events;
     if (delta_events == 0) {
         return;
     }
 
-    while (m_buffer_idx < buffer.size()) {
-        ChannelData data = buffer.at(m_buffer_idx);
+    for (const ChannelData& data : *buffer) {
         coords = p_mapping->GetRowCol(data.vldb_id, data.asic_id, data.half, data.chn);
-        temp[data.mg-1][coords.first][coords.second] += data.value;
+        if ((coords.first == -1) || (coords.second == -1)) {
+            continue;
+        }
 
-        ++m_buffer_idx;
+        temp[data.mg-1][coords.first][coords.second] += data.value;
     }
 
     for (int mg = 0; mg < g_NUM_MACHINE_GUN_TRIGGERS; ++mg) {
@@ -56,7 +63,7 @@ void HeatmapPage::Update() {
         }
     }    
 
-    m_num_events = p_reader->num_complete_events + p_reader->num_incomplete_events;
+    m_num_events = total_current_events;
 }
 
 void HeatmapPage::Clear() {
@@ -68,5 +75,4 @@ void HeatmapPage::Clear() {
 
 void HeatmapPage::Reset() {
     m_num_events = 0;
-    m_buffer_idx = 0;
 }

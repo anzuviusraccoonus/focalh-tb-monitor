@@ -17,6 +17,7 @@ class PageManager {
         }
 
 		void AddPage(Page* pPage);
+        Page* GetPagePtr(std::string name);
 		void UpdatePages();
 		void ClearPages();
         void ResetPages();

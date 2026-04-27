@@ -1,9 +1,9 @@
-#ifndef __MONITOR_TSPAGE2_H__
-#define __MONITOR_TSPAGE2_H__
+#ifndef __MONITOR_INTEGRITYPAGE_H__
+#define __MONITOR_INTEGRITYPAGE_H__
 
 #include "Page.h"
 
-class TSPage2 : public Page {
+class IntegrityPage : public Page {
 	using Page::Page;
 
 	public:

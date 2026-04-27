@@ -2,6 +2,7 @@
 #include <filesystem>
 #include "spdlog/spdlog.h"
 #include "PageManager.h"
+#include "DataReader.h"
 #include "Server.h"
 #include "globals.h"
 
@@ -29,6 +30,17 @@ void PageManager::AddPage(Page* p_page) {
     p_server->RegisterPage(p_page);
 }
 
+Page* PageManager::GetPagePtr(std::string name) {
+    for (Page* p : m_pages) {
+        if (p->GetName() == name) {
+            return p;
+        }
+    }
+
+    spdlog::error("Tried to fetch page with name {} but no such page exists", name);
+    return nullptr;
+}
+
 void PageManager::UpdatePages() {
     spdlog::debug("Updating pages");
 	while (true) {
@@ -40,6 +52,8 @@ void PageManager::UpdatePages() {
 		}
 
         m_last_updated_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+
+        DataReader::GetInstance()->ClearBuffers();
 
 	}
 }

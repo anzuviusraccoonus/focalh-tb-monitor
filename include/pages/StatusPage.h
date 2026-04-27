@@ -24,6 +24,8 @@ class StatusPage : public Page {
 		TText* mp_num_sync_packets;
 		TText* mp_l0_lines_read;
 		TText* mp_l1_lines_read;
+        TText* mp_num_errors_desc;
+        TText* mp_num_errors;
 
         int m_num_trig_lines_read;
         int m_num_data_lines_read;

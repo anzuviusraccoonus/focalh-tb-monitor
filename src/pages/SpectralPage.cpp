@@ -9,6 +9,7 @@
 #include "pages/SpectralPage.h"
 
 void SpectralPage::Initialize() {
+    m_which_machinegun = 0;
 	mp_canvas->Divide(g_NUM_VLDB, 3, 0.01, 0.01);
 	
     std::map<int, std::string> m{{0, "ADC"}, {1, "ToT"}, {2, "ToA"}};
@@ -32,38 +33,34 @@ void SpectralPage::Initialize() {
 
 void SpectralPage::Update() {
     DataReader* p_reader = DataReader::GetInstance();
-    std::vector<ChannelData> buffer_adc = p_reader->buffer_adc;
-    std::vector<ChannelData> buffer_tot = p_reader->buffer_tot;
-    std::vector<ChannelData> buffer_toa = p_reader->buffer_toa;
-    while (m_buffer_idx < buffer_adc.size()) {
-        ChannelData data = buffer_adc.at(m_buffer_idx);
-        if (data.mg == 4) {
+    for (const ChannelData& data : p_reader->buffer_adc) { 
+        if (data.mg == m_which_machinegun) {
             TH2D* p_graph = static_cast<TH2D*>(m_objects[3 * data.vldb_id]);
             p_graph->Fill(data.chn + 
                           (data.half * g_NUM_CHANNELS_PER_HALF) + 
                           (data.asic_id * g_NUM_HALVES_PER_ASIC * g_NUM_CHANNELS_PER_HALF), 
                           data.value);
         }
+    }
 
-        data = buffer_tot.at(m_buffer_idx);
-        if (data.mg == 4) {
-            TH2D* p_graph = static_cast<TH2D*>(m_objects[3 * data.vldb_id + 1]);
+    for (const ChannelData& data : p_reader->buffer_tot) { 
+        if (data.mg == m_which_machinegun) {
+            TH2D* p_graph = static_cast<TH2D*>(m_objects[3 * data.vldb_id]);
             p_graph->Fill(data.chn + 
                           (data.half * g_NUM_CHANNELS_PER_HALF) + 
                           (data.asic_id * g_NUM_HALVES_PER_ASIC * g_NUM_CHANNELS_PER_HALF), 
                           data.value);
         }
+    }
 
-        data = buffer_toa.at(m_buffer_idx);
-        if (data.mg == 4) {
-            TH2D* p_graph = static_cast<TH2D*>(m_objects[3 * data.vldb_id + 2]);
+    for (const ChannelData& data : p_reader->buffer_toa) { 
+        if (data.mg == m_which_machinegun) {
+            TH2D* p_graph = static_cast<TH2D*>(m_objects[3 * data.vldb_id]);
             p_graph->Fill(data.chn + 
                           (data.half * g_NUM_CHANNELS_PER_HALF) + 
                           (data.asic_id * g_NUM_HALVES_PER_ASIC * g_NUM_CHANNELS_PER_HALF), 
                           data.value);
         }
-
-        ++m_buffer_idx;
     }
 }
 
@@ -74,5 +71,14 @@ void SpectralPage::Clear() {
 }
 
 void SpectralPage::Reset() {
-    m_buffer_idx = 0;
+}
+
+void SpectralPage::SetWhichMachinegun(int mg) {
+    if ((mg > g_NUM_MACHINE_GUN_TRIGGERS) || (mg < 1)) {
+        spdlog::error("Invalid machine gun number selection");
+        return;
+    }
+
+    m_which_machinegun = mg;
+    Clear();
 }

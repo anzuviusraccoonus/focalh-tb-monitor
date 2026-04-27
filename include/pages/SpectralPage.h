@@ -12,8 +12,10 @@ class SpectralPage : public Page {
 		void Clear();
 		void Reset();
 
+        void SetWhichMachinegun(int mg);
+
 	private:
-		unsigned long int m_buffer_idx;
+        int m_which_machinegun;
 };
 
 #endif
