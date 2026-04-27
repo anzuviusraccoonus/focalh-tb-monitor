@@ -28,8 +28,6 @@ void EventsPage::Initialize() {
 
     mp_canvas->cd(1);
     TMultiGraph* p_graph_timestamps = new TMultiGraph("Timestamps", "Timestamps of Events");
-    p_graph_timestamps->GetXaxis()->SetTitle("Runtime [sec.]");
-    p_graph_timestamps->GetYaxis()->SetTitle("Timestamps");
     TLegend* p_legend = new TLegend();
     p_legend->SetMargin(0.1);
     for (int vldb = 0; vldb < g_NUM_VLDB; ++vldb) {
@@ -39,6 +37,8 @@ void EventsPage::Initialize() {
         p_graph_timestamps->Add(p_graph);
     }
     p_graph_timestamps->Draw("pmc plc");
+    p_graph_timestamps->GetXaxis()->SetTitle("Runtime [sec.]");
+    p_graph_timestamps->GetYaxis()->SetTitle("Timestamps");
     p_legend->Draw();
     m_objects.push_back(p_graph_timestamps);
 
@@ -48,89 +48,91 @@ void EventsPage::Initialize() {
                                         g_NUM_MACHINE_GUN_TRIGGERS, 0.5, g_NUM_MACHINE_GUN_TRIGGERS + 0.5);
     gPad->SetLogy();
     p_hist_machineguns->Draw();
+    p_hist_machineguns->GetXaxis()->SetTitle("Number of Machine Gun Triggers per Event");
+    p_hist_machineguns->GetYaxis()->SetTitle("Frequency");
     m_objects.push_back(p_hist_machineguns);
 
 
     mp_canvas->cd(3);
     TMultiGraph* p_graph_complete_events = new TMultiGraph("CompleteEvents", Form("Number of Events with %d Machine Gun Triggers", g_NUM_MACHINE_GUN_TRIGGERS));
-    p_graph_complete_events->GetXaxis()->SetTitle("Runtime [sec.]");
-    p_graph_complete_events->GetYaxis()->SetTitle("Events");
     for (int vldb = 0; vldb < g_NUM_VLDB; ++vldb) {
         TGraph* p_graph = new TGraph(g_timegraphs_num_points, xpts, ypts);
         p_graph->SetTitle(Form("%d", vldb));
         p_graph_complete_events->Add(p_graph);
     }
     p_graph_complete_events->Draw("pmc plc");
+    p_graph_complete_events->GetXaxis()->SetTitle("Runtime [sec.]");
+    p_graph_complete_events->GetYaxis()->SetTitle("Events");
     p_legend->Draw();
     m_objects.push_back(p_graph_complete_events);
     
     
     mp_canvas->cd(4);
     TMultiGraph* p_graph_complete_event_rate = new TMultiGraph("CompleteEventRate", "Rate of Complete Events");
-    p_graph_complete_event_rate->GetXaxis()->SetTitle("Runtime [sec.]");
-    p_graph_complete_event_rate->GetYaxis()->SetTitle("Event Rate");
     for (int vldb = 0; vldb < g_NUM_VLDB; ++vldb) {
         TGraph* p_graph = new TGraph(g_timegraphs_num_points, xpts, ypts);
         p_graph->SetTitle(Form("%d", vldb));
         p_graph_complete_event_rate->Add(p_graph);
     }
     p_graph_complete_event_rate->Draw("pmc plc");
+    p_graph_complete_event_rate->GetXaxis()->SetTitle("Runtime [sec.]");
+    p_graph_complete_event_rate->GetYaxis()->SetTitle("Event Rate");
     p_legend->Draw();
     m_objects.push_back(p_graph_complete_event_rate);
 
 
     mp_canvas->cd(5);
     TMultiGraph* p_graph_incomplete_events = new TMultiGraph("IncompleteEvents", Form("Number of Events with <%d Machine Gun Triggers", g_NUM_MACHINE_GUN_TRIGGERS));
-    p_graph_incomplete_events->GetXaxis()->SetTitle("Runtime [sec.]");
-    p_graph_incomplete_events->GetYaxis()->SetTitle("Events");
     for (int vldb = 0; vldb < g_NUM_VLDB; ++vldb) {
         TGraph* p_graph = new TGraph(g_timegraphs_num_points, xpts, ypts);
         p_graph->SetTitle(Form("%d", vldb));
         p_graph_incomplete_events->Add(p_graph);
     }
     p_graph_incomplete_events->Draw("pmc plc");
+    p_graph_incomplete_events->GetXaxis()->SetTitle("Runtime [sec.]");
+    p_graph_incomplete_events->GetYaxis()->SetTitle("Events");
     p_legend->Draw();
     m_objects.push_back(p_graph_incomplete_events);
 
 
     mp_canvas->cd(6);
     TMultiGraph* p_graph_incomplete_event_rate = new TMultiGraph("IncompleteEventRate", "Rate of Incomplete Events");
-    p_graph_incomplete_event_rate->GetXaxis()->SetTitle("Runtime [sec.]");
-    p_graph_incomplete_event_rate->GetYaxis()->SetTitle("Event Rate");
     for (int vldb = 0; vldb < g_NUM_VLDB; ++vldb) {
         TGraph* p_graph = new TGraph(g_timegraphs_num_points, xpts, ypts);
         p_graph->SetTitle(Form("%d", vldb));
         p_graph_incomplete_event_rate->Add(p_graph);
     }
     p_graph_incomplete_event_rate->Draw("pmc plc");
+    p_graph_incomplete_event_rate->GetXaxis()->SetTitle("Runtime [sec.]");
+    p_graph_incomplete_event_rate->GetYaxis()->SetTitle("Event Rate");
     p_legend->Draw();
     m_objects.push_back(p_graph_incomplete_event_rate);
     
     
     mp_canvas->cd(7);
     TMultiGraph* p_graph_error_events = new TMultiGraph("TaintedEvents", "Number of Events with Errors");
-    p_graph_error_events->GetXaxis()->SetTitle("Runtime [sec.]");
-    p_graph_error_events->GetYaxis()->SetTitle("Events");
     for (int vldb = 0; vldb < g_NUM_VLDB; ++vldb) {
         TGraph* p_graph = new TGraph(g_timegraphs_num_points, xpts, ypts);
         p_graph->SetTitle(Form("%d", vldb));
         p_graph_error_events->Add(p_graph);
     }
     p_graph_error_events->Draw("pmc plc");
+    p_graph_error_events->GetXaxis()->SetTitle("Runtime [sec.]");
+    p_graph_error_events->GetYaxis()->SetTitle("Events");
     p_legend->Draw();
     m_objects.push_back(p_graph_error_events);
    
 
     mp_canvas->cd(8);
     TMultiGraph* p_graph_error_events_rate = new TMultiGraph("TaintedEventRate", "Rate of Corrupt Events");
-    p_graph_error_events_rate->GetXaxis()->SetTitle("Runtime [sec.]");
-    p_graph_error_events_rate->GetYaxis()->SetTitle("Event Rate");
     for (int vldb = 0; vldb < g_NUM_VLDB; ++vldb) {
         TGraph* p_graph = new TGraph(g_timegraphs_num_points, xpts, ypts);
         p_graph->SetTitle(Form("%d", vldb));
         p_graph_error_events_rate->Add(p_graph);
     }
     p_graph_error_events_rate->Draw("pmc plc");
+    p_graph_error_events_rate->GetXaxis()->SetTitle("Runtime [sec.]");
+    p_graph_error_events_rate->GetYaxis()->SetTitle("Event Rate");
     p_legend->Draw();
     m_objects.push_back(p_graph_error_events_rate);
 }

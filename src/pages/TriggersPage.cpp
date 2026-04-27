@@ -24,37 +24,37 @@ void TriggersPage::Initialize() {
     mp_canvas->cd(1);
     TGraph* p_graph_good_triggers = new TGraph(g_timegraphs_num_points, xpts, ypts);
     gPad->SetName("p_graph_good_triggers");
+    p_graph_good_triggers->Draw();
     p_graph_good_triggers->SetTitle("Total Number of Good Triggers");
     p_graph_good_triggers->GetXaxis()->SetTitle("Time [sec.]");
     p_graph_good_triggers->GetYaxis()->SetTitle("Triggers");
-    p_graph_good_triggers->Draw();
     m_objects.push_back(p_graph_good_triggers);
 
     mp_canvas->cd(2);
     TGraph* p_graph_good_trigger_rate = new TGraph(g_timegraphs_num_points, xpts, ypts);
     gPad->SetName("p_graph_good_trigger_rate");
+    p_graph_good_trigger_rate->Draw();
     p_graph_good_trigger_rate->SetTitle("Good Trigger Rate");
     p_graph_good_trigger_rate->GetXaxis()->SetTitle("Time [sec.]");
     p_graph_good_trigger_rate->GetYaxis()->SetTitle("Triggers Rate");
-    p_graph_good_trigger_rate->Draw();
     m_objects.push_back(p_graph_good_trigger_rate);
 
     mp_canvas->cd(3);
     TGraph* p_graph_bad_triggers = new TGraph(g_timegraphs_num_points, xpts, ypts);
     gPad->SetName("p_graph_bad_triggers");
+    p_graph_bad_triggers->Draw();
     p_graph_bad_triggers->SetTitle("Total Number of Bad Triggers");
     p_graph_bad_triggers->GetXaxis()->SetTitle("Time [sec.]");
     p_graph_bad_triggers->GetYaxis()->SetTitle("Triggers");
-    p_graph_bad_triggers->Draw();
     m_objects.push_back(p_graph_bad_triggers);
 
     mp_canvas->cd(4);
     TGraph* p_graph_bad_trigger_rate = new TGraph(g_timegraphs_num_points, xpts, ypts);
     gPad->SetName("p_graph_bad_trigger_rate");
+    p_graph_bad_trigger_rate->Draw();
     p_graph_bad_trigger_rate->SetTitle("Bad Trigger Rate");
     p_graph_bad_trigger_rate->GetXaxis()->SetTitle("Time [sec.]");
     p_graph_bad_trigger_rate->GetYaxis()->SetTitle("Trigger Rate");
-    p_graph_bad_trigger_rate->Draw();
     m_objects.push_back(p_graph_bad_trigger_rate);
 
 }

@@ -24,10 +24,10 @@ void IntegrityPage::Initialize() {
         for (int asic = 0; asic < g_NUM_ASIC_PER_VLDB; ++asic) {
             mp_canvas->cd(1 + (2 * vldb) + asic);
             TGraph* p_graph = new TGraph(g_timegraphs_num_points, xpts, ypts);
+            p_graph->Draw();
             p_graph->SetTitle(Form("VLDB %d ASIC %d Data Errors", vldb, asic));
             p_graph->GetXaxis()->SetTitle("Time [sec.]");
             p_graph->GetYaxis()->SetTitle("Errors");
-            p_graph->Draw();
             m_objects.push_back(p_graph);
         }
     }
