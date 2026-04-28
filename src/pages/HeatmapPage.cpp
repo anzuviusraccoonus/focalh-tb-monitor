@@ -9,6 +9,7 @@
 #include "pages/HeatmapPage.h"
 
 void HeatmapPage::Initialize() {
+    Reset();
 	mp_canvas->DivideSquare(g_NUM_MACHINE_GUN_TRIGGERS, 0.001, 0.001);
     for (int n = 0; n < g_NUM_MACHINE_GUN_TRIGGERS; ++n) {
         mp_canvas->cd(n+1);
@@ -32,8 +33,7 @@ void HeatmapPage::Update() {
 	
     std::pair<int, int> coords;
     std::vector<ChannelData>* buffer = static_cast<std::vector<ChannelData>*>(mp_data);
-    float temp[g_NUM_MACHINE_GUN_TRIGGERS][g_HEATMAP_NUM_ROWS][g_HEATMAP_NUM_COLS] = {};
-    
+ 
     int total_current_events = 0;
     for (int vldb = 0; vldb < g_NUM_VLDB; ++vldb) {
         int vldb_events = p_reader->num_complete_events[vldb] + p_reader->num_incomplete_events[vldb];
@@ -45,6 +45,9 @@ void HeatmapPage::Update() {
         return;
     }
 
+    // This is the temporary storage for calculation of new averages per channel,
+    // so we make sure it's zeroed every time, before counting sums
+    std::memset(m_temp_heatmap_data, 0, sizeof m_temp_heatmap_data);
     for (const ChannelData& data : *buffer) {
         coords = p_mapping->GetRowCol(data.vldb_id, data.asic_id, data.half, data.chn);
         if ((coords.first == -1) || (coords.second == -1)) {
@@ -55,14 +58,16 @@ void HeatmapPage::Update() {
             continue;
         }
 
-        temp[data.mg-1][coords.first][coords.second] += data.value;
+        m_temp_heatmap_data[data.mg-1][coords.first][coords.second] += data.value;
     }
 
     for (int mg = 0; mg < g_NUM_MACHINE_GUN_TRIGGERS; ++mg) {
         TH2D* p_graph = static_cast<TH2D*>(m_objects[mg]);
         for (int x = 0; x < g_HEATMAP_NUM_COLS; ++x) {
             for (int y = 0; y < g_HEATMAP_NUM_ROWS; ++y) {
-                p_graph->SetBinContent(x+1, y+1, (p_graph->GetBinContent(x+1, y+1) + temp[mg][y][x]) / delta_events);
+                double previous = p_graph->GetBinContent(x+1, y+1) * m_num_events; // "unaveraged"
+                p_graph->SetBinContent(x+1, y+1, (previous + m_temp_heatmap_data[mg][y][x])
+                                                  / (m_num_events + delta_events) );
             }
         }
     }    

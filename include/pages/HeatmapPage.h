@@ -14,6 +14,7 @@ class HeatmapPage : public Page {
 
 	private:
         int m_num_events;
+        float m_temp_heatmap_data[g_NUM_MACHINE_GUN_TRIGGERS][g_HEATMAP_NUM_ROWS][g_HEATMAP_NUM_COLS];
 };
 
 #endif
