@@ -9,7 +9,7 @@
 #include "pages/SpectralPage.h"
 
 void SpectralPage::Initialize() {
-    m_which_machinegun = 0;
+    m_which_machinegun = (int)(g_NUM_MACHINE_GUN_TRIGGERS / 3.);
 	mp_canvas->Divide(g_NUM_VLDB, 3, 0.01, 0.01);
 	
     std::map<int, std::string> m{{0, "ADC"}, {1, "ToT"}, {2, "ToA"}};

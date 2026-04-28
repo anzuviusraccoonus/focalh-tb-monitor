@@ -91,8 +91,9 @@ class DataReader {
         int m_vldb_line_counter_to_channel_index[g_NUM_VLDB];
         bool m_is_event_tainted[g_NUM_VLDB];
 		bool m_is_reading_daq_frame[g_NUM_VLDB];
-		bool m_has_active_trigger;
+		bool m_has_active_trigger[g_NUM_VLDB];
 		bool m_interrupt_tailing;
+        bool m_has_shown_taint_warning;
 		std::string m_target;
 		std::vector<std::vector<unsigned long int>> m_words[g_NUM_VLDB];//{{NULL, NULL}, {NULL, NULL}};
 };

@@ -21,21 +21,21 @@ DataReader::DataReader() {
         // Function to run when we get a heartbeat packet
         [&](const bp::Heartbeat&) {
             std::scoped_lock lock(g_mutex);
-            spdlog::debug("[HRT.]");
+            spdlog::get("Integrity")->debug("[HRT.]");
 			++num_heartbeat_packets;
         },
         
         // Function to run when we get a sync packet(?)
         [&](std::span<const std::byte>) {
             std::scoped_lock lock(g_mutex);
-            spdlog::debug("[SYNC]");
+            spdlog::get("Integrity")->debug("[SYNC]");
 			++num_sync_packets;
         },
         
         // Function to run when we get an RDH L0 packet
         [&](const bp::RDH_L0& rdh, std::span<const std::byte> raw) {
             std::scoped_lock lock(g_mutex);
-            //spdlog::debug("[RDH0] {:02X} {:02X} {:04X} {:02X} {:02X} {:04X} {:04X} {:04X} {:02X} {:02X} {:04X} {:02X} {:04X} {:08X} {:08X} {:02X} {:08X} {:08X}",
+            //spdlog::get("Integrity")->debug("[RDH0] {:02X} {:02X} {:04X} {:02X} {:02X} {:04X} {:04X} {:04X} {:02X} {:02X} {:04X} {:02X} {:04X} {:08X} {:08X} {:02X} {:08X} {:08X}",
             //              rdh.header_version,
             //              rdh.header_size,
             //              rdh.fee_id,
@@ -60,7 +60,7 @@ DataReader::DataReader() {
         // Function to run when we get an RDH L1 packet
         [&](const bp::RDH_L1& rdh, std::span<const std::byte> raw) {
             std::scoped_lock lock(g_mutex);
-            //spdlog::debug("[RDH1] {:08X} {:04X} {:02X} {:02X} {:08X} {:08X} {:08X} {:04X} {:04X} {:08X} {:08X}",
+            //spdlog::get("Integrity")->debug("[RDH1] {:08X} {:04X} {:02X} {:02X} {:08X} {:08X} {:08X} {:04X} {:04X} {:08X} {:08X}",
             //              rdh.trg_type, 
             //              rdh.hb_packet_counter,
             //              rdh.stop_bit,
@@ -81,7 +81,7 @@ DataReader::DataReader() {
 			++data_lines_read;
 
             // Don't process any data lines unless we got a trigger line first
-            if (not m_has_active_trigger) { return; }
+            if (not m_has_active_trigger[line.header_vldb_id]) { return; }
 
             // This block determines when we've found the start of a DAQ frame,
             // IMPORTANT: *for a given VLDB link*
@@ -115,16 +115,6 @@ DataReader::DataReader() {
 
                 buffer_bx_counters.push_back(line.bx_cnt - m_vldb_bx_counter[line.header_vldb_id]);
                 m_vldb_bx_counter[line.header_vldb_id] += 1;
-
-                //if ( (line.data_word0 == 0xACCCCCCC) ||
-                //     (line.data_word1 == 0xACCCCCCC) ||
-                //     (line.data_word2 == 0xACCCCCCC) ||
-                //     (line.data_word3 == 0xACCCCCCC) ) {
-                //    spdlog::warn("Got an IDLE packet from VLDB link {} inside a DAQ frame (event {}, mg {}) - trying to adjust..",
-                //                 line.header_vldb_id,
-                //                 num_complete_events[line.header_vldb_id] + num_incomplete_events[line.header_vldb_id],
-                //                 m_current_machinegun[line.header_vldb_id]);
-                //}
 
                 // DAQ header line - we extract some useful information here,
                 // but it must be processed differently from regular lines
@@ -162,14 +152,15 @@ DataReader::DataReader() {
                     // Check if the found VLDB link ID is legal
                     // VLDB link IDs are zero-indexed
                     if (line.header_vldb_id >= g_NUM_VLDB) {
-                        spdlog::critical("Got data line for VLDB link {}, but we only have {} links!", 
+                        spdlog::error("Got data line for VLDB link {}, but we only have {} links!", 
                                          line.header_vldb_id, g_NUM_VLDB);
                     }
 
                     // Check if the current channel we've counted to is legal
                     // Channel indices are zero-indexed
                     if (m_current_channel[line.header_vldb_id] >= g_NUM_CHANNELS_PER_HALF) {
-                        spdlog::error("Current channel in DAQ frame is {} (must be < {})",
+                        spdlog::error("Channel number counter for VLDB link {} in current DAQ frame is {} (must be < {})",
+                                         line.header_vldb_id,
                                          m_current_channel[line.header_vldb_id],
                                          g_NUM_CHANNELS_PER_HALF);
 
@@ -178,7 +169,8 @@ DataReader::DataReader() {
                     // Check if the current machine gun number is legal
                     // Machine gun numbers are one-indexed
                     if (m_current_machinegun[line.header_vldb_id] > g_NUM_MACHINE_GUN_TRIGGERS) {
-                        spdlog::error("Current machine gun in event is {} (must be < {})",
+                        spdlog::error("Machine gun counter for VLDB link {} in current event is {} (must be < {})",
+                                         line.header_vldb_id,
                                          m_current_machinegun[line.header_vldb_id],
                                          g_NUM_MACHINE_GUN_TRIGGERS+1);
                     }
@@ -214,7 +206,7 @@ DataReader::DataReader() {
             }
 	   
             // For the sake of log formatting, debug output goes here    
-	    	spdlog::debug("[DATA] {:08X} {:08X} {:08X} {:08X} {:08X} {:08X} {:08X} {:08X} {:08X} {:08X}",
+	    	spdlog::get("Integrity")->debug("[DATA] {:08X} {:08X} {:08X} {:08X} {:08X} {:08X} {:08X} {:08X} {:08X} {:08X}",
                           line.header_type,
                           line.header_vldb_id,
                           line.bx_cnt,
@@ -237,7 +229,7 @@ DataReader::DataReader() {
         // Function to run when we get a trigger packet
         [&](const bp::TrgLine& line, std::span<const std::byte> raw) {
             std::scoped_lock lock(g_mutex);
-            spdlog::debug("[TRIG] {:08X} {:08X} {:08X} {:08X} {:08X}",
+            spdlog::get("Integrity")->debug("[TRIG] {:08X} {:08X} {:08X} {:08X} {:08X}",
                           line.header_type,
                           line.bx_cnt,
                           line.ob_cnt,
@@ -248,19 +240,23 @@ DataReader::DataReader() {
 
             // New trigger arrived while previous one was still active - this is an exception
             // Reset internal state and carry on with the new event
-            if (m_has_active_trigger) {
-                spdlog::error("Got a trigger line while previous one was still active");
-                ++num_bad_triggers;
-                OnEventException();
-                OnEventStart();
+            //if (m_has_active_trigger) {
+            for (int vldb = 0; vldb < g_NUM_VLDB; ++vldb) {
+                if (m_has_active_trigger[vldb]) {
+                    spdlog::get("Integrity")->warn("Got new trigger line, but VLDB link {} was not done yet (trigger #{})", vldb, trig_lines_read);
+                    ++num_bad_triggers;
+                    OnEventException();
+                    OnEventStart();
+                    break;
+                }
             }
 
             // Otherwise, new trigger arrived while we had no active trigger
             // This is normal behaviour and lets us know that an event is incoming
-            else {
+            //else {
                 ++num_good_triggers;
                 OnEventStart();
-            }
+            //}
         }
     );
 
@@ -271,12 +267,12 @@ void DataReader::OnEventStart() {
         m_running_event_adc[vldb] = 0;
         m_current_machinegun[vldb] = 0;
         m_is_event_tainted[vldb] = false;
+        m_has_active_trigger[vldb] = true;
     }
 
-    m_has_active_trigger = true;
 
-    spdlog::debug("╒══════════════════════════════════════╪ START OF EVENT ╪══════════════════════════════════════╕");
-    //spdlog::debug("╽ ┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉  EVENT #{:05d}  ┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉ ╽", num_complete_events[line.header_vldb_id] + num_incomplete_events[line.header_vldb_id]);
+    spdlog::get("Integrity")->debug("╒══════════════════════════════════════╪ START OF EVENT ╪══════════════════════════════════════╕");
+    //spdlog::get("Integrity")->debug("╽ ┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉  EVENT #{:05d}  ┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉┉ ╽", num_complete_events[line.header_vldb_id] + num_incomplete_events[line.header_vldb_id]);
 }
 
 void DataReader::OnEventEnd(const bp::DataLine& line) {
@@ -286,26 +282,28 @@ void DataReader::OnEventEnd(const bp::DataLine& line) {
     if (m_current_machinegun[line.header_vldb_id] == g_NUM_MACHINE_GUN_TRIGGERS) { 
         ++num_complete_events[line.header_vldb_id]; 
     } else {
+        spdlog::get("Integrity")->warn("VLDB Link {} had fewer ({}) than expected ({}) machine gun triggers for event {} (event ended normally)", line.header_vldb_id, m_current_machinegun[line.header_vldb_id], g_NUM_MACHINE_GUN_TRIGGERS, (num_complete_events[line.header_vldb_id] + num_incomplete_events[line.header_vldb_id]));
         ++num_incomplete_events[line.header_vldb_id];
     }
 
     if (m_is_event_tainted[line.header_vldb_id]) {
         ++num_bad_events[line.header_vldb_id];
-    }
-    
-    bool all_done = true;    
-    for (int vldb = 0; vldb < g_NUM_VLDB; ++vldb) {   
-        if (m_is_reading_daq_frame[vldb]) {
-            all_done = false;
-            break;
+
+        if (not m_has_shown_taint_warning) {
+            m_has_shown_taint_warning = true;
+            spdlog::warn("A data integrity error has been found in the current run - this error (and all future errors) can be found in ./data-integrity.log. This message will not be shown again for the current run.");
         }
     }
 
-    if (all_done) {
-        m_has_active_trigger = false;
-        spdlog::debug("╘══════════════════════════════════════╧  END OF EVENT  ╧══════════════════════════════════════╛");
+    m_has_active_trigger[line.header_vldb_id] = false;
+    for (int vldb = 0; vldb < g_NUM_VLDB; ++vldb) {
+        if (m_has_active_trigger[vldb]) {
+            spdlog::get("Integrity")->debug("Event not yet done for VLDB link {}", vldb);
+            return;
+        }
     }
 
+        spdlog::get("Integrity")->debug("╘══════════════════════════════════════╧  END OF EVENT  ╧══════════════════════════════════════╛");
 }
 
 void DataReader::OnEventException() {
@@ -317,6 +315,7 @@ void DataReader::OnEventException() {
         if ((m_current_machinegun[vldb] == g_NUM_MACHINE_GUN_TRIGGERS) && (not m_is_reading_daq_frame[vldb])) {
             ++num_complete_events[vldb];
         } else {
+            spdlog::get("Integrity")->warn("VLDB Link {} had fewer ({}) than expected ({}) machine gun triggers for event {} (event ended by exception)", vldb, m_current_machinegun[vldb], g_NUM_MACHINE_GUN_TRIGGERS, (num_complete_events[vldb] + num_incomplete_events[vldb]));
             ++num_incomplete_events[vldb];
         }
 
@@ -328,13 +327,14 @@ void DataReader::OnEventException() {
 }
 
 void DataReader::OnDAQFrameStart(const bp::DataLine& line) {
+
     frame_start_time[line.header_vldb_id] = line.bx_cnt + (line.ob_cnt << 12);
     m_current_machinegun[line.header_vldb_id] += 1;
     m_is_reading_daq_frame[line.header_vldb_id] = true;
     
-    spdlog::debug("┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━─ START OF DAQ FRAME ─━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓");
-    spdlog::debug("╽ ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈      VLDB Link #{}     ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈ ╽", line.header_vldb_id);
-    spdlog::debug("╽ ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈  MACHINE GUN TRG. #{:02d}  ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈ ╽", m_current_machinegun[line.header_vldb_id]);
+    spdlog::get("Integrity")->debug("┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━─ START OF DAQ FRAME ─━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓");
+    spdlog::get("Integrity")->debug("╽ ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈      VLDB Link #{}     ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈ ╽", line.header_vldb_id);
+    spdlog::get("Integrity")->debug("╽ ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈  MACHINE GUN TRG. #{:02d}  ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈ ╽", m_current_machinegun[line.header_vldb_id]);
 }
 
 void DataReader::OnDAQFrameEnd(const bp::DataLine& line) {
@@ -344,9 +344,9 @@ void DataReader::OnDAQFrameEnd(const bp::DataLine& line) {
     m_current_channel[line.header_vldb_id] = -1;
     m_is_reading_daq_frame[line.header_vldb_id] = false;
 
-    spdlog::debug("╿ ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈  MACHINE GUN TRG. #{:02d}  ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈ ╿", m_current_machinegun[line.header_vldb_id]);
-    spdlog::debug("╿ ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈      VLDB Link #{}     ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈ ╿", line.header_vldb_id);
-    spdlog::debug("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━─ END OF DAQ FRAME ─━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛");
+    spdlog::get("Integrity")->debug("╿ ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈  MACHINE GUN TRG. #{:02d}  ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈ ╿", m_current_machinegun[line.header_vldb_id]);
+    spdlog::get("Integrity")->debug("╿ ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈      VLDB Link #{}     ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈ ╿", line.header_vldb_id);
+    spdlog::get("Integrity")->debug("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━─ END OF DAQ FRAME ─━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛");
 }
 
 void DataReader::DoTailing() {
@@ -436,12 +436,14 @@ void DataReader::CheckDAQHeader(HeaderData header) {
     bool is_good = true;
     if (not ((header.hd == 0xf) && (header.tr == 0x5))) {
         is_good = false;
-        spdlog::critical("DAQH header and/or tailer pattern mismatch! Got {:01X}{:01X}, expected F5 (event {}, VLDB link {}, ASIC {}.{})", header.hd, header.tr, num_complete_events[header.vldb_id] + num_incomplete_events[header.vldb_id] + 1, header.vldb_id, header.asic_id, header.half);
+        spdlog::get("Integrity")->error("VLDB Link {}, ASIC {}.{}: DAQH header and/or tailer pattern mismatch in event {}, mg {} (got: {:01X}{:01X}, expected F5", header.vldb_id, header.asic_id, header.half, num_complete_events[header.vldb_id] + num_incomplete_events[header.vldb_id], m_current_machinegun[header.vldb_id], header.hd, header.tr);
+        //spdlog::get("Integrity")->error("DAQH header and/or tailer pattern mismatch! Got {:01X}{:01X}, expected F5 (event {}, VLDB link {}, ASIC {}.{})", header.hd, header.tr, num_complete_events[header.vldb_id] + num_incomplete_events[header.vldb_id] + 1, header.vldb_id, header.asic_id, header.half);
     }
 
     if (not (header.ham == 0)) {
         is_good = false;
-        spdlog::critical("Hamming decode error bits are set for event {} on VLDB link {}, ASIC {}.{}! (bits: {:03b})", num_complete_events[header.vldb_id] + num_incomplete_events[header.vldb_id] + 1, header.vldb_id, header.asic_id, header.half, header.ham);
+        spdlog::get("Integrity")->error("VLDB Link {}, ASIC {}.{}: Hamming decode error bits are set in event {}, mg {} (bits: {:03b})", header.vldb_id, header.asic_id, header.half, num_complete_events[header.vldb_id] + num_incomplete_events[header.vldb_id], m_current_machinegun[header.vldb_id], header.ham);
+        //spdlog::get("Integrity")->error("Hamming decode error bits are set for event {} on VLDB link {}, ASIC {}.{}! (bits: {:03b})", num_complete_events[header.vldb_id] + num_incomplete_events[header.vldb_id] + 1, header.vldb_id, header.asic_id, header.half, header.ham);
     }
 
     if (not is_good) {
@@ -502,8 +504,8 @@ void DataReader::Reset() {
     event_buffer      .clear();
     buffer_daqh       .clear();
     
-    m_has_active_trigger    = false;
-    m_interrupt_tailing     = true;
+    m_interrupt_tailing       = true;
+    m_has_shown_taint_warning = false;
 
     for (int i = 0; i < g_NUM_VLDB; ++i) {
         m_vldb_line_counter[i]                  = 0;
@@ -521,5 +523,6 @@ void DataReader::Reset() {
         m_running_event_adc[i]         = 0;
         m_is_event_tainted[i]          = false;
         m_is_reading_daq_frame[i]      = false;
+        m_has_active_trigger[i]        = false;
     }
 }

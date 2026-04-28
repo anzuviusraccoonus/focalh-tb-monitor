@@ -3,6 +3,7 @@
 
 #include "external/args/args.hxx"
 #include "spdlog/spdlog.h"
+#include "spdlog/sinks/basic_file_sink.h"
 
 #include "src/PageBuilder.cpp"
 #include "Server.h"
@@ -32,6 +33,8 @@ int main(int argc, char **argv) {
         std::cout << parser;
         return 0;
     }
+
+    auto integrity_logger = spdlog::basic_logger_mt("Integrity", "logs/data-integrity.log");
 
 	Server*         p_server        = Server::GetInstance();
     if (arg_verbose) {
