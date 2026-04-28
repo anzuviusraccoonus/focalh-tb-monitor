@@ -3,8 +3,8 @@
 
 #include "external/args/args.hxx"
 #include "spdlog/spdlog.h"
-#include "src/PageBuilder.cpp"
 
+#include "src/PageBuilder.cpp"
 #include "Server.h"
 #include "PageManager.h"
 #include "DataReader.h"

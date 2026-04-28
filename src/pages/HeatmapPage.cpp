@@ -29,8 +29,8 @@ void HeatmapPage::Initialize() {
 void HeatmapPage::Update() {
     DataReader* p_reader = DataReader::GetInstance();
 	ChannelMapping* p_mapping = ChannelMapping::GetInstance();
-
-	std::pair<int, int> coords;
+	
+    std::pair<int, int> coords;
     std::vector<ChannelData>* buffer = static_cast<std::vector<ChannelData>*>(mp_data);
     float temp[g_NUM_MACHINE_GUN_TRIGGERS][g_HEATMAP_NUM_ROWS][g_HEATMAP_NUM_COLS] = {};
     
@@ -48,6 +48,10 @@ void HeatmapPage::Update() {
     for (const ChannelData& data : *buffer) {
         coords = p_mapping->GetRowCol(data.vldb_id, data.asic_id, data.half, data.chn);
         if ((coords.first == -1) || (coords.second == -1)) {
+            continue;
+        }
+
+        if (data.mg > g_NUM_MACHINE_GUN_TRIGGERS) {
             continue;
         }
 

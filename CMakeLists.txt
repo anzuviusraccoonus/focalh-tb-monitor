@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(FocalHMonitor VERSION 2.0.0 LANGUAGES CXX)
+project(FocalHMonitor VERSION 2.0.1 LANGUAGES CXX)
 
 include(FetchContent)
 
@@ -21,7 +21,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 FetchContent_Declare(
   spdlog
   GIT_REPOSITORY https://github.com/gabime/spdlog.git
-  GIT_TAG        v1.14.1
+  GIT_TAG        v1.17.0
 )
 
 set(SPDLOG_BUILD_SHARED ON)
